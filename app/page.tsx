@@ -1,10 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
+
+import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
-function WithdrawalPopup() {
+import dynamic from 'next/dynamic'
+
+const WithdrawalPopup = dynamic(() => import('@/components/WithdrawalPopup'), { ssr: false })
+
+function WithdrawalNotification() {
   const [mounted, setMounted] = useState(false)
-  const [show, setShow] = useState(false)
   const [current, setCurrent] = useState(0)
+  const [show, setShow] = useState(false)
 
   const list = [
 { name: 'Daniel R.', country: 'United States 🇺🇸', amount: '$120,000', time: 'Just now' },

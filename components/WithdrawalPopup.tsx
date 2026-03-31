@@ -1,15 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
-interface Withdrawal {
-  name: string
-  country: string
-  amount: string
-  time: string
-}
-
-const withdrawals: Withdrawal[] = [
+const LIST = [
   { name: 'Daniel R.', country: 'United States 🇺🇸', amount: '$120,000', time: 'Just now' },
   { name: 'Hassan A.', country: 'UAE 🇦🇪', amount: '$275,500', time: '1 min ago' },
   { name: 'Victor S.', country: 'Switzerland 🇨🇭', amount: '$498,200', time: '2 mins ago' },
@@ -45,86 +38,56 @@ const withdrawals: Withdrawal[] = [
   { name: 'Tariq H.', country: 'Pakistan 🇵🇰', amount: '$1,600', time: 'Just now' },
   { name: 'Luis F.', country: 'Mexico 🇲🇽', amount: '$2,800', time: '2 mins ago' }
 ]
-
 export default function WithdrawalPopup() {
-  const [visible, setVisible] = useState(false)
-  const [current, setCurrent] = useState(0)
-  const [animIn, setAnimIn] = useState(false)
-
-  useEffect(() => {
-    // First popup after 4 seconds
-    const firstTimer = setTimeout(() => showNext(), 4000)
-    return () => clearTimeout(firstTimer)
-  }, [])
+  const [item, setItem] = useState<typeof LIST[0] | null>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const showNext = () => {
-    const idx = Math.floor(Math.random() * withdrawals.length)
-    setCurrent(idx)
-    setVisible(true)
-    setAnimIn(true)
-
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-      setAnimIn(false)
-      setTimeout(() => {
-        setVisible(false)
-        // Show next popup after random 8-15 seconds
-        const nextDelay = 8000 + Math.random() * 7000
-        setTimeout(() => showNext(), nextDelay)
-      }, 400)
+    const next = LIST[Math.floor(Math.random() * LIST.length)]
+    setItem(next)
+    timerRef.current = setTimeout(() => {
+      setItem(null)
+      timerRef.current = setTimeout(showNext, 8000 + Math.random() * 6000)
     }, 5000)
   }
 
-  if (!visible) return null
+  useEffect(() => {
+    timerRef.current = setTimeout(showNext, 4000)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [])
 
-  const item = withdrawals[current]
+  if (!item) return null
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, left: 24, zIndex: 9998,
-      transform: `translateX(${animIn ? 0 : -120}%)`,
-      transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      maxWidth: 320,
+      position: 'fixed', bottom: 28, left: 28,
+      zIndex: 99999, maxWidth: 295,
+      fontFamily: 'monospace',
+      animation: 'wpSlide 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards',
     }}>
+      <style>{`
+        @keyframes wpSlide {
+          from { transform: translateX(-110%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
       <div style={{
         background: '#0d1117',
-        border: '1px solid rgba(201,168,76,0.3)',
-        borderRadius: 12,
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        border: '2px solid #C9A84C',
+        borderRadius: 14, padding: '14px 40px 14px 14px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+        position: 'relative',
       }}>
-        {/* Icon */}
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #C9A84C, #E8D08C)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, flexShrink: 0,
-        }}>💸</div>
-
-        {/* Content */}
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 3 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', fontFamily: 'monospace' }}>{item.name}</div>
-            <div style={{ fontSize: 10, color: '#484f58', fontFamily: 'monospace', marginLeft: 8, flexShrink: 0 }}>{item.time}</div>
-          </div>
-          <div style={{ fontSize: 11, color: '#8b949e', fontFamily: 'monospace', marginBottom: 4 }}>{item.country}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#3fb950', fontFamily: 'monospace' }}>
-            Withdrew {item.amount} ✅
-          </div>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>💸</div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>{item.name}</div>
+          <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 4 }}>{item.country}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#3fb950' }}>Withdrew {item.amount} ✅</div>
         </div>
-
-        {/* Close */}
-        <button
-          onClick={() => { setAnimIn(false); setTimeout(() => setVisible(false), 400) }}
-          style={{ background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0, alignSelf: 'flex-start' }}
-        >✕</button>
+        <button onClick={() => setItem(null)} style={{ position: 'absolute', top: 10, right: 12, background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 16 }}>✕</button>
       </div>
-
-      {/* Bottom label */}
-      <div style={{ textAlign: 'center', marginTop: 6, fontSize: 9, color: '#484f58', fontFamily: 'monospace', letterSpacing: '0.06em' }}>
+      <div style={{ textAlign: 'center', marginTop: 5, fontSize: 9, color: '#484f58', letterSpacing: '0.1em' }}>
         VERIFIED WITHDRAWAL · CAPITALMARKET PRO
       </div>
     </div>

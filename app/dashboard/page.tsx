@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [showDeposit, setShowDeposit] = useState(false)
 
   return (
+    <>
     <div style={{ padding: 24 }}>
 
       {/* Header */}
@@ -102,8 +103,8 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
         {/* P&L Chart */}
         <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Portfolio Performance</div>
+          <div style={{ marginBottom: 16 }}>Portfolio 
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Performance</div>
             <div style={{ fontSize: 11, color: '#484f58' }}>12 month overview</div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
@@ -146,21 +147,28 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+</div>
+
+      {/* TradingView Chart */}
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Live Market Chart</div>
+            <div style={{ fontSize: 11, color: '#484f58' }}>Real-time price data</div>
+          </div>
+          <span style={{ fontSize: 11, color: '#3fb950', background: 'rgba(63,185,80,0.1)', padding: '4px 10px', borderRadius: 20 }}>● LIVE</span>
+        </div>
+        <div style={{ borderRadius: 8, overflow: 'hidden' }}>
+          <iframe
+            src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview&symbol=BINANCE:BTCUSDT&interval=60&hidesidetoolbar=1&hidetoptoolbar=0&symboledit=1&saveimage=0&toolbarbg=0d1117&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&showpopupbutton=0&studies=[]&locale=en"
+            style={{ width: '100%', height: 300, border: 'none', borderRadius: 8 }}
+            allowTransparency={true}
+          />
+        </div>
       </div>
 
       {/* Recent Trades */}
-      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Recent Activity</div>
-            <div style={{ fontSize: 11, color: '#484f58' }}>Latest trades across all platforms</div>
-          </div>
-          <Link href="/dashboard/trades">
-            <button style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #C9A84C', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', fontSize: 11, cursor: 'pointer' }}>
-              View All →
-            </button>
-          </Link>
-        </div>
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, marginBottom: 20, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #161b22' }}>
@@ -185,6 +193,7 @@ export default function DashboardPage() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       {/* Deposit Modal */}
@@ -225,6 +234,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
