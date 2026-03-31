@@ -129,7 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginLeft: sidebarOpen ? 220 : 68, transition: 'margin-left 0.3s ease' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', marginLeft: sidebarOpen ? 220 : 68, transition: 'margin-left 0.3s ease', minWidth: 0 }}>
         {/* Topbar */}
         <div style={{ background: '#0d1117', borderBottom: '1px solid #161b22', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
