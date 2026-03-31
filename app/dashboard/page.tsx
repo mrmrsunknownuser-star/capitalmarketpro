@@ -171,7 +171,23 @@ export default function HomePage() {
     init()
   }, [])
 
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Trader'
+const [profileName, setProfileName] = useState('Trader')
+
+useEffect(() => {
+  const init = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setUser(user)
+    const { data: profile } = await supabase.from('users').select('full_name, kyc_status, tier').eq('id', user.id).single()
+    const { data: bal } = await supabase.from('balances').select('*').eq('user_id', user.id).single()
+    setBalance(bal)
+    setKycStatus(profile?.kyc_status || 'none')
+    const name = profile?.full_name || user?.user_metadata?.full_name || ''
+    setProfileName(name ? name.split(' ')[0] : user.email?.split('@')[0] || 'Trader')
+  }
+  init()
+}, [])
   const totalBalance = balance?.total_balance || 0
   const totalPnl = balance?.total_pnl || 0
 
@@ -181,7 +197,7 @@ export default function HomePage() {
       {/* Welcome Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>
-          Welcome back, {firstName} 👋
+          Welcome back, {profileName} 👋
         </div>
         <div style={{ fontSize: 13, color: '#484f58' }}>Here's your CapitalMarket Pro overview</div>
       </div>
