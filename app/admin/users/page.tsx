@@ -28,15 +28,16 @@ export default function AdminUsersPage() {
   const [btcAddress, setBtcAddress] = useState('')
 
   const fetchUsers = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error) setUsers(data || [])
-    setLoading(false)
-  }
+  setLoading(true)
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false })
+  console.log('Users fetched:', data?.length, error)
+  setUsers(data || [])
+  setLoading(false)
+}
 
   useEffect(() => { fetchUsers() }, [])
 
