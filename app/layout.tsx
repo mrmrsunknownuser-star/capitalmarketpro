@@ -1,7 +1,32 @@
 'use client'
+
 import WithdrawalPopup from '@/components/WithdrawalPopup'
 import { useState, useEffect } from 'react'
 import './globals.css'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'CapitalMarket Pro — Professional Trading Platform',
+  description: "The world's most professional all-in-one trading platform. Trade crypto, stocks, earn affiliate income and get real-time trading signals — all in one dashboard.",
+  keywords: ['trading platform', 'crypto trading', 'stock trading', 'trading signals', 'affiliate income', 'bitcoin', 'ethereum'],
+  authors: [{ name: 'CapitalMarket Pro' }],
+  robots: 'index, follow',
+  openGraph: {
+    title: 'CapitalMarket Pro — Professional Trading Platform',
+    description: 'Trade crypto, stocks and earn affiliate income in one powerful dashboard.',
+    type: 'website',
+    url: 'https://capitalmarketpro.vercel.app',
+    images: [{ url: 'https://capitalmarketpro.vercel.app/og-image.png' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CapitalMarket Pro',
+    description: 'Professional trading platform for crypto, stocks and affiliate income.',
+  },
+  icons: { icon: '/favicon.ico' },
+  themeColor: '#C9A84C',
+  viewport: 'width=device-width, initial-scale=1',
+}
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [phase, setPhase] = useState(0)
