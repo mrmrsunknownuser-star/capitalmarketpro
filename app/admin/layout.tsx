@@ -15,14 +15,174 @@ const navItems = [
   { icon: '📋', label: 'Audit Log', href: '/admin/audit' },
   { icon: '⚙', label: 'Settings', href: '/admin/settings' },
 ]
+{/* Admin Notifications Bell */}
+<AdminNotificationBell />
+function AdminNotificationBell() {
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [open, setOpen] = useState(false)
+  const [count, setCount] = useState(0)
 
+  useEffect(() => {
+    const fetch = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get recent activity as admin notifications
+      const { data: withdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('*, user:users(email)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      const { data: messages } = await supabase
+        .from('support_messages')
+        .select('*, chat:support_chats(user:users(email))')
+        .eq('sender_role', 'user')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      const { data: newUsers } = await supabase
+        .from('users')
+        .select('email, created_at')
+        .eq('role', 'user')
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      const notifs = [
+        ...(withdrawals || []).map(w => ({
+          id: w.id, type: 'withdrawal', icon: '⬆',
+          color: '#F7A600',
+          title: 'Pending Withdrawal',
+          desc: `${w.user?.email} requested $${w.amount}`,
+          time: w.created_at,
+          href: '/admin/withdrawals',
+        })),
+        ...(messages || []).map(m => ({
+          id: m.id, type: 'support', icon: '💬',
+          color: '#7B2BF9',
+          title: 'New Support Message',
+          desc: m.chat?.user?.email || 'User sent a message',
+          time: m.created_at,
+          href: '/admin/support',
+        })),
+        ...(newUsers || []).map(u => ({
+          id: u.email, type: 'user', icon: '👤',
+          color: '#3fb950',
+          title: 'New User Registered',
+          desc: u.email,
+          time: u.created_at,
+          href: '/admin/users',
+        })),
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 10)
+
+      setNotifications(notifs)
+      setCount(notifs.length)
+    }
+    fetch()
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetch, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(!open)} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: 4 }}>
+        <span style={{ fontSize: 20 }}>🔔</span>
+        {count > 0 && (
+          <div style={{ position: 'absolute', top: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: '#f85149', fontSize: 9, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count > 9 ? '9+' : count}</div>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
+          <div style={{ position: 'absolute', top: 40, right: 0, width: 320, background: '#0d1117', border: '1px solid #21262d', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', zIndex: 99, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>Admin Notifications</div>
+              <div style={{ fontSize: 10, color: '#484f58' }}>{count} items</div>
+            </div>
+            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+              {notifications.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#484f58', fontSize: 13 }}>All clear! No pending items.</div>
+              ) : notifications.map(n => (
+                <a key={n.id} href={n.href} onClick={() => setOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #161b22' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: `${n.color}15`, border: `1px solid ${n.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: n.color, marginBottom: 2 }}>{n.title}</div>
+                      <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 3 }}>{n.desc}</div>
+                      <div style={{ fontSize: 10, color: '#484f58' }}>{new Date(n.time).toLocaleString()}</div>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <div style={{ padding: '10px 16px', borderTop: '1px solid #161b22', textAlign: 'center' }}>
+              <a href="/admin/dashboard" style={{ fontSize: 12, color: '#C9A84C', textDecoration: 'none' }}>View all activity →</a>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [stats, setStats] = useState({ users: 0, pending: 0 })
+const [mobileOpen, setMobileOpen] = useState(false)
+const [stats, setStats] = useState({ users: 0, pending: 0 })
 
-  useEffect(() => {
+useEffect(() => {
+    // Real-time notifications for admin
+const supabaseClient = createClient()
+
+// Listen for new support messages
+supabaseClient
+  .channel('admin-support')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'support_messages',
+    filter: 'sender_role=eq.user',
+  }, (payload) => {
+    // Show browser notification
+    if (Notification.permission === 'granted') {
+      new Notification('💬 New Support Message', {
+        body: 'A user sent a new support message',
+        icon: '/favicon.ico',
+      })
+    }
+    // Update pending count
+    setStats(prev => ({ ...prev, pending: prev.pending + 1 }))
+  })
+  .subscribe()
+
+// Listen for new user registrations
+supabaseClient
+  .channel('admin-users')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'users',
+  }, (payload) => {
+    if (Notification.permission === 'granted') {
+      new Notification('👤 New User Registered', {
+        body: `A new trader just joined CapitalMarket Pro`,
+        icon: '/favicon.ico',
+      })
+    }
+    setStats(prev => ({ ...prev, users: prev.users + 1 }))
+  })
+  .subscribe()
+
+// Request notification permission
+if (typeof window !== 'undefined' && Notification.permission === 'default') {
+  Notification.requestPermission()
+}
     if (pathname === '/admin/login') return
     const check = async () => {
       const supabase = createClient()
