@@ -45,21 +45,46 @@ export default function AdminWithdrawalsPage() {
     setActionLoading(true)
     const supabase = createClient()
 
-    await supabase.from('withdrawal_requests').update({
-      status,
-      admin_note: adminNote || null,
-      reviewed_at: new Date().toISOString(),
-    }).eq('id', selected.id)
+await supabase.from('withdrawal_requests').update({
+  status,
+  admin_note: adminNote || null,
+  reviewed_at: new Date().toISOString(),
+}).eq('id', selected.id)
 
-    // Send notification to user
-    await supabase.from('notifications').insert({
-      user_id: selected.id,
-      title: status === 'approved' ? '✅ Withdrawal Approved' : '❌ Withdrawal Rejected',
-      message: status === 'approved'
-        ? `Your withdrawal of $${selected.amount} has been approved and is being processed.`
-        : `Your withdrawal of $${selected.amount} was rejected. ${adminNote ? `Reason: ${adminNote}` : ''}`,
-      type: status === 'approved' ? 'success' : 'warning',
+// Send email notification to user
+const { data: userData } = await supabase
+  .from('users')
+  .select('email')
+  .eq('id', selected.id)
+  .single()
+
+if (userData?.email) {
+  await fetch('/api/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: status === 'approved' ? 'withdrawal_approved' : 'withdrawal_rejected',
+      to: userData.email,
+      data: {
+        amount: selected.amount,
+        requestId: selected.request_id,
+        wallet: selected.wallet_address,
+        network: selected.network,
+        reason: adminNote || null,
+      }
     })
+  })
+}
+
+// Send notification to user
+await supabase.from('notifications').insert({
+  user_id: selected.id,
+  title: status === 'approved' ? '✅ Withdrawal Approved' : '❌ Withdrawal Rejected',
+  message: status === 'approved'
+    ? `Your withdrawal of $${selected.amount} has been approved and is being processed.`
+    : `Your withdrawal of $${selected.amount} was rejected. ${adminNote ? `Reason: ${adminNote}` : ''}`,
+  type: status === 'approved' ? 'success' : 'warning',
+})
 
     // Audit log
     await supabase.from('audit_logs').insert({

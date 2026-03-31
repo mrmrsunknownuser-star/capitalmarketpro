@@ -28,6 +28,16 @@ export default function RegisterPage() {
       options: { data: { full_name: fullName } }
     })
     if (error) { setError(error.message); setLoading(false); return }
+    // Send welcome email
+await fetch('/api/email', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    type: 'welcome',
+    to: email,
+    data: { name: fullName || email }
+  })
+})
     router.push('/dashboard')
   }
 
