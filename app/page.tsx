@@ -1,228 +1,401 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
-const pnlData = [
-  { date: 'Jan', value: 42000 }, { date: 'Feb', value: 47500 },
-  { date: 'Mar', value: 43200 }, { date: 'Apr', value: 56800 },
-  { date: 'May', value: 61200 }, { date: 'Jun', value: 58700 },
-  { date: 'Jul', value: 67400 }, { date: 'Aug', value: 72100 },
-  { date: 'Sep', value: 69800 }, { date: 'Oct', value: 78500 },
-  { date: 'Nov', value: 84200 }, { date: 'Dec', value: 91600 },
+const features = [
+  { icon: '₿', title: 'Crypto Trading', desc: 'Buy, sell and trade Bitcoin, Ethereum, Solana and 100+ cryptocurrencies with real-time market data.', color: '#F7A600' },
+  { icon: '📈', title: 'Stock Brokerage', desc: 'Access global stock markets. Trade Apple, Tesla, NVIDIA and thousands of stocks and ETFs.', color: '#00B386' },
+  { icon: '🔗', title: 'Affiliate Earnings', desc: 'Generate passive income through our affiliate program. Track clicks, conversions and payouts.', color: '#FF9900' },
+  { icon: '⚡', title: 'Trading Signals', desc: 'Professional buy/sell signals with 84% accuracy. Crypto and stocks covered 24/7.', color: '#7B2BF9' },
+  { icon: '🔒', title: 'Bank-Level Security', desc: '256-bit SSL encryption, 2FA authentication and cold storage for maximum fund protection.', color: '#C9A84C' },
+  { icon: '📊', title: 'Unified Dashboard', desc: 'See all your investments in one place. Track P&L, portfolio allocation and performance charts.', color: '#0052FF' },
 ]
 
-const assets = [
-  { name: 'Bitcoin (BTC)', amount: '0.4820 BTC', value: 18400, change: '+8.2%', positive: true, color: '#F7A600' },
-  { name: 'Ethereum (ETH)', amount: '3.42 ETH', value: 12200, change: '+4.1%', positive: true, color: '#627EEA' },
-  { name: 'Solana (SOL)', amount: '48.2 SOL', value: 10680, change: '+12.4%', positive: true, color: '#9945FF' },
-  { name: 'Apple Inc (AAPL)', amount: '55 shares', value: 10400, change: '-0.6%', positive: false, color: '#8b949e' },
-  { name: 'NVIDIA (NVDA)', amount: '14 shares', value: 12800, change: '+3.2%', positive: true, color: '#76B900' },
+const stats = [
+  { value: '$2.4B+', label: 'Total Volume Traded' },
+  { value: '150K+', label: 'Active Traders' },
+  { value: '99.9%', label: 'Uptime Guaranteed' },
+  { value: '24/7', label: 'Live Support' },
 ]
 
-const recentActivity = [
-  { id: 'TXN-8821', type: 'BUY', asset: 'BTC/USD', amount: '$12,400', pnl: '+$1,240', time: '2h ago' },
-  { id: 'TXN-8820', type: 'SELL', asset: 'ETH/USDT', amount: '$4,800', pnl: '+$320', time: '4h ago' },
-  { id: 'TXN-8819', type: 'BUY', asset: 'AAPL', amount: '$8,120', pnl: '-$180', time: '6h ago' },
-  { id: 'TXN-8818', type: 'EARN', asset: 'Affiliate', amount: '$248', pnl: '+$248', time: '8h ago' },
-  { id: 'TXN-8817', type: 'BUY', asset: 'SOL/USD', amount: '$2,200', pnl: '+$440', time: '12h ago' },
+const signalPlans = [
+  { name: 'Basic', price: '$99', period: '/mo', color: '#8b949e', signals: '5', features: ['5 signals/day', 'Crypto only', 'Email alerts'] },
+  { name: 'Pro', price: '$299', period: '/mo', color: '#0052FF', signals: '15', popular: true, features: ['15 signals/day', 'Crypto + Stocks', 'Push + Email alerts', 'Risk management'] },
+  { name: 'Elite', price: '$492', period: '/mo', color: '#C9A84C', signals: '30', features: ['30 signals/day', 'Crypto + Stocks', 'Priority alerts', 'Weekly outlook'] },
+  { name: 'VIP', price: '$845', period: '/mo', color: '#7B2BF9', signals: '∞', features: ['Unlimited signals', 'All markets', '24/7 Priority alerts', '1-on-1 strategy calls', 'Dedicated support'] },
 ]
 
-export default function DashboardPage() {
-  const [balance, setBalance] = useState<any>(null)
-  const [user, setUser] = useState<any>(null)
-  const [showDeposit, setShowDeposit] = useState(false)
+const testimonials = [
+  { name: 'Michael R.', role: 'Professional Trader', text: 'CapitalMarket Pro changed how I manage my portfolio. Having crypto, stocks and affiliate income in one dashboard is a game changer.', avatar: 'M' },
+  { name: 'Sarah K.', role: 'Crypto Investor', text: 'The platform is incredibly professional. Deposits are fast, the charts are clean and the support team is always responsive.', avatar: 'S' },
+  { name: 'James T.', role: 'Stock Trader', text: 'The trading signals alone are worth every penny. 84% accuracy rate has completely transformed my trading results.', avatar: 'J' },
+]
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUser(user)
-      const { data } = await supabase.from('balances').select('*').eq('user_id', user.id).single()
-      setBalance(data)
-    }
-    fetch()
-  }, [])
+const faqs = [
+  { q: 'How do I fund my account?', a: 'We accept Bitcoin (BTC) deposits for fast and secure funding. Simply click Deposit, choose your preferred provider like MoonPay or Binance, and send BTC to your unique deposit address.' },
+  { q: 'How long do withdrawals take?', a: 'Withdrawals are reviewed by our team within 24-48 hours. Once approved, funds are sent directly to your crypto wallet.' },
+  { q: 'Is my money safe?', a: 'Yes. We use 256-bit SSL encryption, two-factor authentication, and cold storage to protect all user funds and data.' },
+  { q: 'What markets can I trade?', a: 'You can trade cryptocurrencies (BTC, ETH, SOL, BNB and more), global stocks (US, EU markets), and earn through our affiliate program.' },
+  { q: 'What are the trading signal plans?', a: 'We offer Basic ($29/mo), Pro ($79/mo), Elite ($149/mo), and VIP ($299/mo) plans. Each plan includes different signal volumes and features.' },
+  { q: 'How do I get started?', a: 'Simply create a free account, complete your KYC verification, deposit funds via Bitcoin, and start trading immediately.' },
+]
 
-  const totalBalance = balance?.total_balance || 130430
-  const totalPnl = balance?.total_pnl || 24680
-  const pnlPct = balance?.pnl_percentage || 23.3
+const ticker = [
+  { symbol: 'BTC/USD', price: '$67,240', change: '+2.4%', up: true },
+  { symbol: 'ETH/USD', price: '$3,480', change: '+1.8%', up: true },
+  { symbol: 'SOL/USD', price: '$142.30', change: '+5.2%', up: true },
+  { symbol: 'BNB/USD', price: '$412.80', change: '-0.8%', up: false },
+  { symbol: 'AAPL', price: '$189.30', change: '-0.6%', up: false },
+  { symbol: 'NVDA', price: '$875.40', change: '+3.2%', up: true },
+  { symbol: 'MSFT', price: '$415.20', change: '+1.1%', up: true },
+  { symbol: 'TSLA', price: '$248.60', change: '-1.4%', up: false },
+  { symbol: 'XRP/USD', price: '$0.624', change: '+4.1%', up: true },
+  { symbol: 'ADA/USD', price: '$0.482', change: '+2.8%', up: true },
+]
+
+export default function LandingPage() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [email, setEmail] = useState('')
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh' }}>
 
-      {/* Welcome Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-        <div>
-          <div style={{ fontSize: 13, color: '#484f58', marginBottom: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Total Portfolio Value</div>
-          <div style={{ fontSize: 42, fontWeight: 800, color: '#e6edf3', letterSpacing: '-0.02em', lineHeight: 1 }}>
-            ${totalBalance.toLocaleString()}
+      {/* ── NAVBAR ── */}
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(6,10,15,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #161b22', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#060a0f' }}>C</div>
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#C9A84C' }}>CapitalMarket</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3' }}> Pro</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: '#3fb950', background: 'rgba(63,185,80,0.12)', border: '1px solid rgba(63,185,80,0.2)', padding: '4px 10px', borderRadius: 20 }}>
-              ▲ +${totalPnl.toLocaleString()} all time
-            </span>
-            <span style={{ fontSize: 12, color: '#3fb950' }}>+{pnlPct}%</span>
-          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          {[{ label: 'Features', href: '#features' }, { label: 'Signals', href: '#signals' }, { label: 'Pricing', href: '#pricing' }, { label: 'FAQ', href: '#faq' }, { label: 'Terms', href: '/terms' }].map(item => (
+            <a key={item.label} href={item.href} style={{ fontSize: 13, color: '#8b949e', textDecoration: 'none' }}>{item.label}</a>
+          ))}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={() => setShowDeposit(true)}
-            style={{ padding: '11px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.04em' }}>
-            + Deposit
-          </button>
-          <Link href="/dashboard/withdraw">
-            <button style={{ padding: '11px 24px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 13, cursor: 'pointer' }}>
-              Withdraw
-            </button>
+          <Link href="/login">
+            <button style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>Sign In</button>
+          </Link>
+          <Link href="/register">
+            <button style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>Get Started →</button>
           </Link>
         </div>
-      </div>
+      </nav>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'Crypto Holdings', value: `$${(balance?.crypto_balance || 41280).toLocaleString()}`, icon: '₿', change: '+10.2%', positive: true },
-          { label: 'Stock Portfolio', value: `$${(balance?.stocks_balance || 38750).toLocaleString()}`, icon: '📈', change: '-3.0%', positive: false },
-          { label: 'Affiliate Income', value: `$${(balance?.affiliate_balance || 15480).toLocaleString()}`, icon: '🔗', change: '+13.5%', positive: true },
-          { label: 'Active Signals', value: '12', icon: '⚡', change: '4 new today', positive: true },
-        ].map((card, i) => (
-          <div key={i} style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20, position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: -10, right: -10, fontSize: 48, opacity: 0.06 }}>{card.icon}</div>
-            <div style={{ fontSize: 28, marginBottom: 10 }}>{card.icon}</div>
-            <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{card.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#e6edf3', marginBottom: 6 }}>{card.value}</div>
-            <div style={{ fontSize: 11, color: card.positive ? '#3fb950' : '#f85149' }}>{card.change}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Chart + Assets */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16, marginBottom: 24 }}>
-        {/* Portfolio Chart */}
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Portfolio Growth</div>
-              <div style={{ fontSize: 11, color: '#484f58' }}>12 month performance</div>
-            </div>
-            <span style={{ fontSize: 11, color: '#3fb950', background: 'rgba(63,185,80,0.1)', padding: '4px 10px', borderRadius: 20 }}>▲ +118% YTD</span>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={pnlData}>
-              <defs>
-                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#C9A84C" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#C9A84C" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#161b22" />
-              <XAxis dataKey="date" stroke="#484f58" tick={{ fontSize: 10, fill: '#484f58' }} />
-              <YAxis stroke="#484f58" tick={{ fontSize: 10, fill: '#484f58' }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: '#0d1117', border: '1px solid #21262d', borderRadius: 8, fontSize: 11 }} formatter={(v: any) => [`$${v.toLocaleString()}`, 'Portfolio Value']} />
-              <Area type="monotone" dataKey="value" stroke="#C9A84C" strokeWidth={2.5} fill="url(#areaGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Top Assets */}
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3', marginBottom: 4 }}>Top Holdings</div>
-          <div style={{ fontSize: 11, color: '#484f58', marginBottom: 16 }}>Your best performing assets</div>
-          {assets.map((a, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < assets.length - 1 ? '1px solid #161b22' : 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: `${a.color}18`, border: `1px solid ${a.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: a.color, flexShrink: 0 }}>
-                  {a.name.slice(0, 2)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, color: '#e6edf3', fontWeight: 500 }}>{a.name.split('(')[0].trim()}</div>
-                  <div style={{ fontSize: 10, color: '#484f58' }}>{a.amount}</div>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3' }}>${a.value.toLocaleString()}</div>
-                <div style={{ fontSize: 10, color: a.positive ? '#3fb950' : '#f85149' }}>{a.change}</div>
-              </div>
+      {/* ── TICKER BAR ── */}
+      <div style={{ position: 'fixed', top: 64, left: 0, right: 0, zIndex: 99, background: '#0a0e14', borderBottom: '1px solid #161b22', overflow: 'hidden', height: 36, display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', animation: 'ticker 30s linear infinite', whiteSpace: 'nowrap' }}>
+          {[...ticker, ...ticker].map((p, i) => (
+            <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 20px', borderRight: '1px solid #161b22' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3' }}>{p.symbol}</span>
+              <span style={{ fontSize: 11, color: '#8b949e' }}>{p.price}</span>
+              <span style={{ fontSize: 10, color: p.up ? '#3fb950' : '#f85149' }}>{p.change}</span>
             </div>
           ))}
         </div>
+        <style>{`@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
       </div>
 
-      {/* Signal Banner */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 12, padding: 20, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#C9A84C', marginBottom: 4 }}>⚡ Trading Signals Available</div>
-          <div style={{ fontSize: 12, color: '#8b949e' }}>Get real-time buy/sell signals for crypto and stocks. Upgrade your plan to unlock all signals.</div>
-        </div>
-        <Link href="/dashboard/signals">
-          <button style={{ padding: '10px 22px', borderRadius: 10, border: '1px solid #C9A84C', background: 'rgba(201,168,76,0.1)', color: '#C9A84C', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: 20 }}>
-            View Signals →
-          </button>
-        </Link>
-      </div>
-
-      {/* Recent Activity */}
-      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>Recent Activity</div>
-            <div style={{ fontSize: 11, color: '#484f58' }}>Your latest trades and transactions</div>
+      {/* ── HERO ── */}
+      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '160px 40px 80px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 820, position: 'relative' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 20, padding: '6px 16px', marginBottom: 28, fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em' }}>
+            ⚡ NEXT GENERATION TRADING PLATFORM
           </div>
-          <Link href="/dashboard/trades">
-            <button style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #C9A84C', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', fontSize: 11, cursor: 'pointer' }}>
-              View All →
-            </button>
-          </Link>
-        </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #161b22' }}>
-              {['ID', 'Asset', 'Type', 'Amount', 'P&L', 'Time'].map(h => (
-                <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, color: '#484f58', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentActivity.map((t) => (
-              <tr key={t.id} style={{ borderBottom: '1px solid #161b22' }}>
-                <td style={{ padding: '12px', fontSize: 11, color: '#8b949e', fontFamily: 'monospace' }}>{t.id}</td>
-                <td style={{ padding: '12px', fontSize: 12, color: '#e6edf3', fontWeight: 500 }}>{t.asset}</td>
-                <td style={{ padding: '12px', fontSize: 10, fontWeight: 700, color: t.type === 'BUY' ? '#3fb950' : t.type === 'SELL' ? '#f85149' : '#C9A84C' }}>{t.type}</td>
-                <td style={{ padding: '12px', fontSize: 12, color: '#e6edf3' }}>{t.amount}</td>
-                <td style={{ padding: '12px', fontSize: 12, fontWeight: 600, color: t.pnl.startsWith('+') ? '#3fb950' : '#f85149' }}>{t.pnl}</td>
-                <td style={{ padding: '12px', fontSize: 11, color: '#484f58' }}>{t.time}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Deposit Modal */}
-      {showDeposit && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowDeposit(false) }}>
-          <div style={{ background: '#0d1117', border: '1px solid #21262d', borderRadius: 16, width: '100%', maxWidth: 480, padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#e6edf3' }}>Deposit Funds</div>
-              <button onClick={() => setShowDeposit(false)} style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, color: '#8b949e', cursor: 'pointer', width: 32, height: 32, fontSize: 14 }}>✕</button>
-            </div>
-            <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-              <p style={{ fontSize: 13, color: '#c9d1d9', lineHeight: 1.8, margin: 0 }}>
-                To avoid <strong style={{ color: '#C9A84C' }}>loss of trades</strong> or missing <strong style={{ color: '#C9A84C' }}>profitable market signals</strong>, we make use of <strong style={{ color: '#C9A84C' }}>cryptocurrency (Bitcoin preferably)</strong> for funding. This ensures <strong style={{ color: '#C9A84C' }}>fast processing</strong> aligned with our <strong style={{ color: '#C9A84C' }}>automated strategy</strong>.
-              </p>
-            </div>
-            <Link href="/dashboard/deposit" onClick={() => setShowDeposit(false)}>
-              <button style={{ width: '100%', padding: '13px 0', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', border: 'none', borderRadius: 10, color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                Continue to Deposit →
+          <h1 style={{ fontSize: 60, fontWeight: 800, color: '#e6edf3', lineHeight: 1.1, marginBottom: 24, letterSpacing: '-0.02em' }}>
+            Trade Smarter.<br />
+            <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Grow Faster.</span>
+          </h1>
+          <p style={{ fontSize: 18, color: '#8b949e', lineHeight: 1.8, maxWidth: 580, margin: '0 auto 40px' }}>
+            The world's most professional all-in-one trading platform. Crypto, stocks, affiliate earnings and trading signals — unified in one powerful dashboard.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+            <Link href="/register">
+              <button style={{ padding: '15px 36px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.04em', fontFamily: 'monospace' }}>
+                Start Trading Free →
+              </button>
+            </Link>
+            <Link href="/login">
+              <button style={{ padding: '15px 36px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 14, cursor: 'pointer', fontFamily: 'monospace' }}>
+                Sign In
               </button>
             </Link>
           </div>
+          <div style={{ fontSize: 12, color: '#484f58' }}>No credit card required · Free to get started · Instant access</div>
         </div>
-      )}
+      </section>
+
+      {/* ── STATS ── */}
+      <section style={{ padding: '60px 40px', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22', background: '#0d1117' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 40 }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 34, fontWeight: 800, color: '#C9A84C', marginBottom: 6 }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: '#484f58', letterSpacing: '0.06em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section id="features" style={{ padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Everything You Need</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, color: '#e6edf3', marginBottom: 12 }}>Built for Serious Traders</h2>
+            <p style={{ fontSize: 15, color: '#8b949e', maxWidth: 500, margin: '0 auto' }}>One platform. Every market. Complete control over your financial future.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            {features.map(f => (
+              <div key={f.title} style={{ background: '#0d1117', border: `1px solid ${f.color}22`, borderRadius: 14, padding: 24, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, borderRadius: '0 14px 0 80px', background: `${f.color}08` }} />
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: `${f.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, marginBottom: 16 }}>{f.icon}</div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>{f.title}</h3>
+                <p style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.8 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SIGNALS SECTION ── */}
+      <section id="signals" style={{ padding: '80px 40px', background: '#0d1117', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Trading Signals</div>
+              <h2 style={{ fontSize: 38, fontWeight: 700, color: '#e6edf3', marginBottom: 16, lineHeight: 1.3 }}>
+                Professional Signals.<br />
+                <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Real Results.</span>
+              </h2>
+              <p style={{ fontSize: 14, color: '#8b949e', lineHeight: 1.8, marginBottom: 24 }}>
+                Our automated trading system analyzes market data 24/7 to generate high-accuracy buy and sell signals for crypto and stocks.
+              </p>
+              {[
+                { icon: '⚡', text: 'Up to unlimited signals per day (VIP plan)' },
+                { icon: '🎯', text: '84% average signal accuracy rate' },
+                { icon: '📊', text: 'Crypto + Stock signals in one place' },
+                { icon: '🔔', text: 'Real-time push and email alerts' },
+                { icon: '🛡', text: 'Built-in risk management guidance' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <span style={{ fontSize: 18 }}>{item.icon}</span>
+                  <span style={{ fontSize: 13, color: '#8b949e' }}>{item.text}</span>
+                </div>
+              ))}
+              <Link href="/register">
+                <button style={{ marginTop: 20, padding: '12px 28px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
+                  Get Signals Access →
+                </button>
+              </Link>
+            </div>
+            <div>
+              {[
+                { asset: 'BTC/USD', type: 'BUY', entry: '$67,200', target: '$71,500', strength: 92 },
+                { asset: 'ETH/USD', type: 'BUY', entry: '$3,480', target: '$3,750', strength: 87 },
+                { asset: 'NVDA', type: 'BUY', entry: '$875', target: '$920', strength: 78 },
+              ].map((signal, i) => (
+                <div key={i} style={{ background: '#060a0f', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ padding: '3px 10px', borderRadius: 6, background: 'rgba(63,185,80,0.15)', color: '#3fb950', fontSize: 11, fontWeight: 800 }}>{signal.type}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3' }}>{signal.asset}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3fb950', boxShadow: '0 0 6px #3fb950' }} />
+                      <span style={{ fontSize: 10, color: '#3fb950' }}>LIVE</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                    <div style={{ background: '#0d1117', borderRadius: 6, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 9, color: '#484f58', marginBottom: 2 }}>ENTRY</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>{signal.entry}</div>
+                    </div>
+                    <div style={{ background: '#0d1117', borderRadius: 6, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 9, color: '#484f58', marginBottom: 2 }}>TARGET</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#3fb950' }}>{signal.target}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 10, color: '#484f58' }}>Strength</span>
+                    <div style={{ flex: 1, height: 4, background: '#161b22', borderRadius: 2 }}>
+                      <div style={{ width: `${signal.strength}%`, height: '100%', background: '#3fb950', borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#3fb950' }}>{signal.strength}%</span>
+                  </div>
+                </div>
+              ))}
+              <div style={{ textAlign: 'center', padding: 16, background: 'rgba(201,168,76,0.04)', border: '1px dashed rgba(201,168,76,0.2)', borderRadius: 12 }}>
+                <div style={{ fontSize: 12, color: '#484f58' }}>🔒 More signals unlocked after signup</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SIGNAL PRICING ── */}
+      <section id="pricing" style={{ padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Signal Plans</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, color: '#e6edf3', marginBottom: 12 }}>Choose Your Plan</h2>
+            <p style={{ fontSize: 14, color: '#8b949e' }}>All plans include access to our automated signal system. Cancel anytime.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {signalPlans.map(plan => (
+              <div key={plan.name} style={{ background: plan.popular ? 'rgba(0,82,255,0.06)' : '#0d1117', border: `2px solid ${plan.popular ? plan.color : plan.color + '33'}`, borderRadius: 14, padding: 24, position: 'relative' }}>
+                {plan.popular && (
+                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#0052FF', color: '#fff', fontSize: 9, fontWeight: 700, padding: '4px 14px', borderRadius: 20, whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                    MOST POPULAR
+                  </div>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 700, color: plan.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{plan.name}</div>
+                <div style={{ marginBottom: 16 }}>
+                  <span style={{ fontSize: 30, fontWeight: 800, color: '#e6edf3' }}>{plan.price}</span>
+                  <span style={{ fontSize: 12, color: '#484f58' }}>{plan.period}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#8b949e', marginBottom: 16 }}>
+                  <strong style={{ color: plan.color }}>{plan.signals}</strong> signals/day
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  {plan.features.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, fontSize: 11, color: '#8b949e' }}>
+                      <span style={{ color: plan.color, flexShrink: 0 }}>✓</span>{f}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/register">
+                  <button style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: `1px solid ${plan.color}`, background: plan.popular ? plan.color : `${plan.color}0d`, color: plan.popular ? '#fff' : plan.color, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
+                    Get {plan.name} →
+                  </button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{ padding: '80px 40px', background: '#0d1117', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>Testimonials</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, color: '#e6edf3' }}>Trusted by Thousands</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            {testimonials.map(t => (
+              <div key={t.name} style={{ background: '#060a0f', border: '1px solid #161b22', borderRadius: 14, padding: 24 }}>
+                <div style={{ fontSize: 28, color: '#C9A84C', marginBottom: 16 }}>"</div>
+                <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 20 }}>{t.text}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#060a0f' }}>{t.avatar}</div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3' }}>{t.name}</div>
+                    <div style={{ fontSize: 10, color: '#484f58' }}>{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" style={{ padding: '80px 40px' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>FAQ</div>
+            <h2 style={{ fontSize: 38, fontWeight: 700, color: '#e6edf3' }}>Frequently Asked Questions</h2>
+          </div>
+          {faqs.map((faq, i) => (
+            <div key={i} style={{ borderBottom: '1px solid #161b22' }}>
+              <div onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 0', cursor: 'pointer' }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: openFaq === i ? '#C9A84C' : '#e6edf3' }}>{faq.q}</div>
+                <span style={{ color: '#484f58', fontSize: 20, flexShrink: 0, marginLeft: 16 }}>{openFaq === i ? '−' : '+'}</span>
+              </div>
+              {openFaq === i && <div style={{ padding: '0 0 18px', fontSize: 13, color: '#8b949e', lineHeight: 1.8 }}>{faq.a}</div>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ padding: '80px 40px', textAlign: 'center', background: '#0d1117', borderTop: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 42, fontWeight: 800, color: '#e6edf3', marginBottom: 16 }}>
+            Ready to Start{' '}
+            <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Trading?</span>
+          </h2>
+          <p style={{ fontSize: 15, color: '#8b949e', marginBottom: 32 }}>
+            Join 150,000+ traders on CapitalMarket Pro. Create your free account in minutes.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              style={{ flex: 1, maxWidth: 300, background: '#161b22', border: '1px solid #21262d', borderRadius: 10, padding: '13px 16px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
+            />
+            <Link href={`/register${email ? `?email=${email}` : ''}`}>
+              <button style={{ padding: '13px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                Get Started Free →
+              </button>
+            </Link>
+          </div>
+          <div style={{ fontSize: 11, color: '#484f58' }}>Free forever · No credit card · Instant setup</div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ background: '#060a0f', borderTop: '1px solid #161b22' }}>
+        <div style={{ padding: '48px 40px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, maxWidth: 1100, margin: '0 auto' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#060a0f' }}>C</div>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: '#C9A84C' }}>CapitalMarket</span>
+                <span style={{ color: '#e6edf3' }}> Pro</span>
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: '#484f58', lineHeight: 1.8, maxWidth: 280, marginBottom: 16 }}>
+              The world's most professional all-in-one trading platform. Crypto, stocks, and affiliate earnings unified in one powerful dashboard.
+            </p>
+            <div style={{ fontSize: 11, color: '#484f58' }}>🔒 256-bit SSL Encrypted · SOC 2 Compliant</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Platform</div>
+            {['Dashboard', 'Trading Signals', 'Affiliate Program', 'Deposit', 'Withdraw'].map(item => (
+              <div key={item} style={{ marginBottom: 10 }}>
+                <a href="/register" style={{ fontSize: 12, color: '#484f58', textDecoration: 'none' }}>{item}</a>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Company</div>
+            {[{ label: 'About Us', href: '#' }, { label: 'Terms & Conditions', href: '/terms' }, { label: 'Privacy Policy', href: '#' }, { label: 'Risk Disclosure', href: '/terms' }].map(item => (
+              <div key={item.label} style={{ marginBottom: 10 }}>
+                <a href={item.href} style={{ fontSize: 12, color: '#484f58', textDecoration: 'none' }}>{item.label}</a>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Support</div>
+            {[{ label: '24/7 Live Chat', href: '/register' }, { label: 'FAQ', href: '#faq' }, { label: 'Signal Plans', href: '#pricing' }, { label: 'Contact Us', href: '#' }].map(item => (
+              <div key={item.label} style={{ marginBottom: 10 }}>
+                <a href={item.href} style={{ fontSize: 12, color: '#484f58', textDecoration: 'none' }}>{item.label}</a>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ borderTop: '1px solid #161b22', padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1100, margin: '0 auto', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontSize: 11, color: '#484f58' }}>© 2025 CapitalMarket Pro. All rights reserved.</div>
+          <div style={{ fontSize: 11, color: '#484f58' }}>⚠ Trading involves risk. Past performance is not indicative of future results.</div>
+        </div>
+      </footer>
     </div>
   )
 }
