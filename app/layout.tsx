@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'VaultFlow',
+  title: 'CapitalMarket Pro',
   description: 'Professional Trading Platform',
 }
 

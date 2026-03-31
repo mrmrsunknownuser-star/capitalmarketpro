@@ -32,7 +32,7 @@ export default function AdminLayout({
           <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #f85149, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0 }}>A</div>
           {open && <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#f85149', letterSpacing: '0.08em' }}>ADMIN</div>
-            <div style={{ fontSize: 10, color: '#484f58' }}>VaultFlow Control</div>
+            <div style={{ fontSize: 10, color: '#484f58' }}>CapitalMarket Pro</div>
           </div>}
         </div>
 
