@@ -3,65 +3,77 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
-// ── WITHDRAWAL POPUP ──
-const WITHDRAWALS = [
-  { name: 'James O.', country: 'United States 🇺🇸', amount: '$4,200' },
-  { name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$8,750' },
-  { name: 'Carlos R.', country: 'Canada 🇨🇦', amount: '$2,500' },
-  { name: 'Amina K.', country: 'Nigeria 🇳🇬', amount: '$12,000' },
-  { name: 'David L.', country: 'Australia 🇦🇺', amount: '$6,300' },
-  { name: 'Fatima A.', country: 'UAE 🇦🇪', amount: '$18,500' },
-  { name: 'Michael T.', country: 'Germany 🇩🇪', amount: '$3,800' },
-  { name: 'Priya S.', country: 'Singapore 🇸🇬', amount: '$9,200' },
-  { name: 'Ahmed H.', country: 'Saudi Arabia 🇸🇦', amount: '$22,000' },
-  { name: 'Emma W.', country: 'France 🇫🇷', amount: '$7,400' },
-  { name: 'Marcus J.', country: 'United States 🇺🇸', amount: '$11,300' },
-  { name: 'Chioma E.', country: 'Nigeria 🇳🇬', amount: '$3,200' },
-  { name: 'Yuki T.', country: 'Japan 🇯🇵', amount: '$8,000' },
-  { name: 'Lisa C.', country: 'Netherlands 🇳🇱', amount: '$4,900' },
+const POPUP_EVENTS = [
+  // Deposits
+  { type: 'deposit', name: 'James O.', country: 'United States 🇺🇸', amount: '$12,500' },
+  { type: 'deposit', name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$8,200' },
+  { type: 'deposit', name: 'Carlos R.', country: 'Canada 🇨🇦', amount: '$25,000' },
+  { type: 'deposit', name: 'Amina K.', country: 'Nigeria 🇳🇬', amount: '$5,500' },
+  { type: 'deposit', name: 'David L.', country: 'Australia 🇦🇺', amount: '$18,750' },
+  { type: 'deposit', name: 'Fatima A.', country: 'UAE 🇦🇪', amount: '$50,000' },
+  { type: 'deposit', name: 'Michael T.', country: 'Germany 🇩🇪', amount: '$9,800' },
+  { type: 'deposit', name: 'Priya S.', country: 'Singapore 🇸🇬', amount: '$33,000' },
+  // Withdrawals
+  { type: 'withdrawal', name: 'Ahmed H.', country: 'Saudi Arabia 🇸🇦', amount: '$62,400' },
+  { type: 'withdrawal', name: 'Emma W.', country: 'France 🇫🇷', amount: '$28,750' },
+  { type: 'withdrawal', name: 'Marcus J.', country: 'United States 🇺🇸', amount: '$41,300' },
+  { type: 'withdrawal', name: 'Chioma E.', country: 'Nigeria 🇳🇬', amount: '$15,200' },
+  { type: 'withdrawal', name: 'Yuki T.', country: 'Japan 🇯🇵', amount: '$38,000' },
+  { type: 'withdrawal', name: 'Lisa C.', country: 'Netherlands 🇳🇱', amount: '$54,900' },
+  { type: 'withdrawal', name: 'James O.', country: 'United States 🇺🇸', amount: '$87,500' },
+  { type: 'withdrawal', name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$23,600' },
+  { type: 'deposit', name: 'Omar K.', country: 'Kuwait 🇰🇼', amount: '$100,000' },
+  { type: 'withdrawal', name: 'Sofia R.', country: 'Brazil 🇧🇷', amount: '$19,400' },
+  { type: 'deposit', name: 'Chen W.', country: 'Hong Kong 🇭🇰', amount: '$75,000' },
+  { type: 'withdrawal', name: 'Amina K.', country: 'Nigeria 🇳🇬', amount: '$31,800' },
 ]
 
 function WithdrawalPopup() {
-  const [item, setItem] = useState<typeof WITHDRAWALS[0] | null>(null)
+  const [item, setItem] = useState<typeof POPUP_EVENTS[0] | null>(null)
   const timer = useRef<any>(null)
 
   useEffect(() => {
     const cycle = () => {
-      setItem(WITHDRAWALS[Math.floor(Math.random() * WITHDRAWALS.length)])
+      setItem(POPUP_EVENTS[Math.floor(Math.random() * POPUP_EVENTS.length)])
       timer.current = setTimeout(() => {
         setItem(null)
-        timer.current = setTimeout(cycle, 7000 + Math.random() * 5000)
+        timer.current = setTimeout(cycle, 6000 + Math.random() * 5000)
       }, 5000)
     }
-    timer.current = setTimeout(cycle, 3500)
+    timer.current = setTimeout(cycle, 3000)
     return () => clearTimeout(timer.current)
   }, [])
 
   if (!item) return null
 
+  const isDeposit = item.type === 'deposit'
+
   return (
     <div style={{
       position: 'fixed', bottom: 20, left: 20, zIndex: 99999,
-      maxWidth: 280, fontFamily: 'monospace',
+      maxWidth: 290, fontFamily: 'monospace',
       animation: 'wpSlide 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards',
     }}>
       <div style={{
-        background: '#0d1117', border: '2px solid #C9A84C',
-        borderRadius: 14, padding: '12px 40px 12px 12px',
+        background: '#0d1117',
+        border: `2px solid ${isDeposit ? '#0052FF' : '#C9A84C'}`,
+        borderRadius: 14, padding: '12px 38px 12px 12px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
         position: 'relative',
       }}>
-        <div style={{ fontSize: 28, flexShrink: 0 }}>💸</div>
+        <div style={{ fontSize: 26, flexShrink: 0 }}>{isDeposit ? '💰' : '💸'}</div>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>{item.name}</div>
-          <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 3 }}>{item.country}</div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#3fb950' }}>Withdrew {item.amount} ✅</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', marginBottom: 1 }}>{item.name}</div>
+          <div style={{ fontSize: 10, color: '#8b949e', marginBottom: 3 }}>{item.country}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: isDeposit ? '#0052FF' : '#3fb950' }}>
+            {isDeposit ? 'Deposited' : 'Withdrew'} {item.amount} {isDeposit ? '📥' : '✅'}
+          </div>
         </div>
         <button onClick={() => setItem(null)} style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 14 }}>✕</button>
       </div>
       <div style={{ textAlign: 'center', marginTop: 4, fontSize: 9, color: '#484f58', letterSpacing: '0.1em' }}>
-        VERIFIED · CAPITALMARKET PRO
+        VERIFIED · CAPITALMARKET PRO · AUTOMATED
       </div>
     </div>
   )
