@@ -1,10 +1,13 @@
 'use client'
-import WithdrawalPopup from '@/components/WithdrawalPopup'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-// ── WITHDRAWAL POPUP ──
-const withdrawals = [
-  { name: 'Daniel R.', country: 'United States 🇺🇸', amount: '$120,000', time: 'Just now' },
+function WithdrawalPopup() {
+  const [mounted, setMounted] = useState(false)
+  const [show, setShow] = useState(false)
+  const [current, setCurrent] = useState(0)
+
+  const list = [
+{ name: 'Daniel R.', country: 'United States 🇺🇸', amount: '$120,000', time: 'Just now' },
   { name: 'Hassan A.', country: 'UAE 🇦🇪', amount: '$275,500', time: '1 min ago' },
   { name: 'Victor S.', country: 'Switzerland 🇨🇭', amount: '$498,200', time: '2 mins ago' },
   { name: 'Zhang L.', country: 'China 🇨🇳', amount: '$310,750', time: 'Just now' },
@@ -39,65 +42,112 @@ const withdrawals = [
   { name: 'Tariq H.', country: 'Pakistan 🇵🇰', amount: '$1,600', time: 'Just now' },
   { name: 'Luis F.', country: 'Mexico 🇲🇽', amount: '$2,800', time: '2 mins ago' }
 ]
-function WithdrawalPopupComponent() {
-  const [visible, setVisible] = useState(false)
-  const [current, setCurrent] = useState(0)
-  const [animIn, setAnimIn] = useState(false)
+
+  // Fix hydration — only mount on client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout
+    if (!mounted) return
+
+    let timer: ReturnType<typeof setTimeout>
 
     const show = () => {
-      const idx = Math.floor(Math.random() * withdrawals.length)
-      setCurrent(idx)
-      setVisible(true)
-      setTimeout(() => setAnimIn(true), 50)
-      timeout = setTimeout(() => {
-        setAnimIn(false)
-        setTimeout(() => {
-          setVisible(false)
-          timeout = setTimeout(show, 8000 + Math.random() * 7000)
-        }, 500)
+      setCurrent(Math.floor(Math.random() * list.length))
+      setShow(true)
+      timer = setTimeout(() => {
+        setShow(false)
+        timer = setTimeout(show, 9000)
       }, 5000)
     }
 
-    timeout = setTimeout(show, 4000)
-    return () => clearTimeout(timeout)
-  }, [])
+    timer = setTimeout(show, 3500)
+    return () => clearTimeout(timer)
+  }, [mounted])
 
-  if (!visible) return null
+  if (!mounted) return null
 
-  const item = withdrawals[current]
+  const item = list[current]
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 24, left: 24, zIndex: 9999,
-      transform: `translateX(${animIn ? '0%' : '-130%'})`,
-      transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      maxWidth: 300, fontFamily: 'monospace',
-    }}>
-      <div style={{
-        background: '#0d1117',
-        border: '1px solid rgba(201,168,76,0.4)',
-        borderRadius: 12, padding: '14px 16px',
-        display: 'flex', alignItems: 'center', gap: 12,
-        boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
-      }}>
-        <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>💸</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3' }}>{item.name}</div>
-            <div style={{ fontSize: 10, color: '#484f58' }}>Just now</div>
+    <>
+      <style>{`
+        @keyframes cmpSlideIn {
+          0% { transform: translateX(-110%); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes cmpSlideOut {
+          0% { transform: translateX(0); opacity: 1; }
+          100% { transform: translateX(-110%); opacity: 0; }
+        }
+        .cmp-popup-enter {
+          animation: cmpSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .cmp-popup-exit {
+          animation: cmpSlideOut 0.4s ease forwards;
+        }
+      `}</style>
+
+      {show && (
+        <div
+          className="cmp-popup-enter"
+          style={{
+            position: 'fixed',
+            bottom: 28,
+            left: 28,
+            zIndex: 99999,
+            maxWidth: 300,
+            fontFamily: 'monospace',
+          }}
+        >
+          <div style={{
+            background: '#0d1117',
+            border: '2px solid #C9A84C',
+            borderRadius: 14,
+            padding: '14px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #C9A84C, #E8D08C)',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 22, flexShrink: 0,
+            }}>💸</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 3 }}>
+                {item.name}
+              </div>
+              <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 5 }}>
+                {item.country}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#3fb950' }}>
+                Withdrew {item.amount} ✅
+              </div>
+            </div>
+            <button
+              onClick={() => setShow(false)}
+              style={{
+                position: 'absolute', top: 10, right: 12,
+                background: 'none', border: 'none',
+                color: '#484f58', cursor: 'pointer',
+                fontSize: 16, lineHeight: 1,
+              }}
+            >✕</button>
           </div>
-          <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 4 }}>{item.country}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#3fb950' }}>Withdrew {item.amount} ✅</div>
+          <div style={{
+            textAlign: 'center', marginTop: 6,
+            fontSize: 9, color: '#484f58',
+            letterSpacing: '0.1em',
+          }}>
+            VERIFIED WITHDRAWAL · CAPITALMARKET PRO
+          </div>
         </div>
-        <button onClick={() => { setAnimIn(false); setTimeout(() => setVisible(false), 500) }} style={{ background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 14, alignSelf: 'flex-start', padding: 0 }}>✕</button>
-      </div>
-      <div style={{ textAlign: 'center', marginTop: 5, fontSize: 9, color: '#484f58', letterSpacing: '0.06em' }}>
-        VERIFIED · CAPITALMARKET PRO
-      </div>
-    </div>
+      )}
+    </>
   )
 }
 
