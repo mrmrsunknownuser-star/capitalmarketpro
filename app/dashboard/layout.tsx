@@ -6,11 +6,12 @@ import { usePathname } from 'next/navigation'
 
 const navItems = [
   { icon: '▦', label: 'Overview', href: '/dashboard' },
-  { icon: '◈', label: 'Portfolio', href: '/dashboard/portfolio' },
+  { icon: '📊', label: 'Portfolio', href: '/dashboard/portfolio' },
   { icon: '↕', label: 'Trades', href: '/dashboard/trades' },
+  { icon: '⚡', label: 'Signals', href: '/dashboard/signals' },
   { icon: '⬇', label: 'Deposit', href: '/dashboard/deposit' },
   { icon: '⬆', label: 'Withdraw', href: '/dashboard/withdraw' },
-  { icon: '◉', label: 'Affiliate', href: '/dashboard/affiliate' },
+  { icon: '🔗', label: 'Affiliate', href: '/dashboard/affiliate' },
   { icon: '🔔', label: 'Notifications', href: '/dashboard/notifications' },
   { icon: '💬', label: 'Support', href: '/dashboard/support' },
   { icon: '⚙', label: 'Settings', href: '/dashboard/settings' },
