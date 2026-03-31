@@ -70,6 +70,7 @@ const navItems = [
   { icon: '🔗', label: 'Affiliate', href: '/dashboard/affiliate' },
   { icon: '🔔', label: 'Notifications', href: '/dashboard/notifications' },
   { icon: '💬', label: 'Support', href: '/dashboard/support' },
+  { icon: '🪪', label: 'Verification', href: '/dashboard/kyc' },
   { icon: '⚙', label: 'Settings', href: '/dashboard/settings' },
 ]
 
