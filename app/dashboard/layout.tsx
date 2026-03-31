@@ -33,14 +33,15 @@ const TICKER = [
   { s: 'XRP', p: '$0.62', c: '+4.1%', u: true },
 ]
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }): React.ReactNode {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userName, setUserName] = useState('U')
   const [unread, setUnread] = useState(0)
+  const [ready, setReady] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
     const init = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -50,11 +51,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false)
       setUnread(count || 0)
     }
-    init()
-  }, [])
+  init()
+  setReady(true)
+}, [])
 
-  // Close sidebar when route changes on mobile
-  useEffect(() => { setMobileOpen(false) }, [pathname])
+// Close sidebar when route changes on mobile
+useEffect(() => { setMobileOpen(false) }, [pathname])
 
   return (
     <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', display: 'flex' }}>
@@ -180,7 +182,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
-          {children}
+          {!ready ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 13, color: '#C9A84C', marginBottom: 8 }}>⟳ Loading...</div>
+                <div style={{ fontSize: 11, color: '#484f58' }}>CapitalMarket Pro</div>
+              </div>
+            </div>
+          ) : children}
         </div>
       </div>
 

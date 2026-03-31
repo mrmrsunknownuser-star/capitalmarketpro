@@ -135,6 +135,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
 const [mobileOpen, setMobileOpen] = useState(false)
 const [stats, setStats] = useState({ users: 0, pending: 0 })
+const [authChecked, setAuthChecked] = useState(false)
+{/* Content */}
+<div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
+  {!authChecked ? (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 400 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 32, marginBottom: 12, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</div>
+        <div style={{ fontSize: 13, color: '#484f58' }}>Loading...</div>
+      </div>
+    </div>
+  ) : children}
+</div>
 
 useEffect(() => {
     // Real-time notifications for admin
@@ -194,31 +206,30 @@ if (typeof window !== 'undefined' && Notification.permission === 'default') {
       const { count: pending } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       setStats({ users: users || 0, pending: pending || 0 })
     }
-    check()
-  }, [pathname])
+  check()
+  setAuthChecked(true)
+}, [pathname])
 
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
-  if (pathname === '/admin/login') return <>{children}</>
+if (pathname === '/admin/login') return <>{children}</>
 
-  return (
-    <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', display: 'flex' }}>
-
-      {/* Mobile overlay */}
+return (
+  <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', display: 'flex' }}>
+    {/* Mobile overlay */}
       {mobileOpen && (
         <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 998 }} />
       )}
 
       {/* Sidebar */}
-      <div style={{
-        width: 220, background: '#0d1117', borderRight: '1px solid #161b22',
-        display: 'flex', flexDirection: 'column', position: 'fixed',
-        top: 0, left: 0, height: '100vh', zIndex: 999, overflowY: 'auto',
-        transition: 'transform 0.3s ease',
-        transform: mobileOpen ? 'translateX(0)' : undefined,
-      }} className="admin-sidebar">
-
-        {/* Logo */}
+<div style={{
+  width: 220, background: '#0d1117', borderRight: '1px solid #161b22',
+  display: 'flex', flexDirection: 'column', position: 'fixed',
+  top: 0, left: 0, height: '100vh', zIndex: 999, overflowY: 'auto',
+  transition: 'transform 0.3s ease',
+  transform: mobileOpen ? 'translateX(0)' : undefined,
+}} className="admin-sidebar">
+  {/* Logo */}
         <div style={{ padding: '18px 16px', borderBottom: '1px solid #161b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #f85149, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>A</div>
