@@ -15,307 +15,295 @@ const navItems = [
   { icon: '📋', label: 'Audit Log', href: '/admin/audit' },
   { icon: '⚙', label: 'Settings', href: '/admin/settings' },
 ]
-{/* Admin Notifications Bell */}
-<AdminNotificationBell />
-function AdminNotificationBell() {
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [open, setOpen] = useState(false)
-  const [count, setCount] = useState(0)
 
-  useEffect(() => {
-    const fetch = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get recent activity as admin notifications
-      const { data: withdrawals } = await supabase
-        .from('withdrawal_requests')
-        .select('*, user:users(email)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      const { data: messages } = await supabase
-        .from('support_messages')
-        .select('*, chat:support_chats(user:users(email))')
-        .eq('sender_role', 'user')
-        .eq('is_read', false)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      const { data: newUsers } = await supabase
-        .from('users')
-        .select('email, created_at')
-        .eq('role', 'user')
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      const notifs = [
-        ...(withdrawals || []).map(w => ({
-          id: w.id, type: 'withdrawal', icon: '⬆',
-          color: '#F7A600',
-          title: 'Pending Withdrawal',
-          desc: `${w.user?.email} requested $${w.amount}`,
-          time: w.created_at,
-          href: '/admin/withdrawals',
-        })),
-        ...(messages || []).map(m => ({
-          id: m.id, type: 'support', icon: '💬',
-          color: '#7B2BF9',
-          title: 'New Support Message',
-          desc: m.chat?.user?.email || 'User sent a message',
-          time: m.created_at,
-          href: '/admin/support',
-        })),
-        ...(newUsers || []).map(u => ({
-          id: u.email, type: 'user', icon: '👤',
-          color: '#3fb950',
-          title: 'New User Registered',
-          desc: u.email,
-          time: u.created_at,
-          href: '/admin/users',
-        })),
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 10)
-
-      setNotifications(notifs)
-      setCount(notifs.length)
-    }
-    fetch()
-
-    // Refresh every 30 seconds
-    const interval = setInterval(fetch, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(!open)} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: 4 }}>
-        <span style={{ fontSize: 20 }}>🔔</span>
-        {count > 0 && (
-          <div style={{ position: 'absolute', top: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: '#f85149', fontSize: 9, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count > 9 ? '9+' : count}</div>
-        )}
-      </button>
-
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
-          <div style={{ position: 'absolute', top: 40, right: 0, width: 320, background: '#0d1117', border: '1px solid #21262d', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', zIndex: 99, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>Admin Notifications</div>
-              <div style={{ fontSize: 10, color: '#484f58' }}>{count} items</div>
-            </div>
-            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
-              {notifications.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center', color: '#484f58', fontSize: 13 }}>All clear! No pending items.</div>
-              ) : notifications.map(n => (
-                <a key={n.id} href={n.href} onClick={() => setOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: '1px solid #161b22' }}>
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: `${n.color}15`, border: `1px solid ${n.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{n.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: n.color, marginBottom: 2 }}>{n.title}</div>
-                      <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 3 }}>{n.desc}</div>
-                      <div style={{ fontSize: 10, color: '#484f58' }}>{new Date(n.time).toLocaleString()}</div>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-            <div style={{ padding: '10px 16px', borderTop: '1px solid #161b22', textAlign: 'center' }}>
-              <a href="/admin/dashboard" style={{ fontSize: 12, color: '#C9A84C', textDecoration: 'none' }}>View all activity →</a>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-const [mobileOpen, setMobileOpen] = useState(false)
-const [stats, setStats] = useState({ users: 0, pending: 0 })
-const [authChecked, setAuthChecked] = useState(false)
-{/* Content */}
-<div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
-  {!authChecked ? (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 400 }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 12, animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</div>
-        <div style={{ fontSize: 13, color: '#484f58' }}>Loading...</div>
-      </div>
-    </div>
-  ) : children}
-</div>
+  const [ready, setReady] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [pending, setPending] = useState(0)
+  const [userCount, setUserCount] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [bellOpen, setBellOpen] = useState(false)
 
-useEffect(() => {
-    // Real-time notifications for admin
-const supabaseClient = createClient()
-
-// Listen for new support messages
-supabaseClient
-  .channel('admin-support')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'support_messages',
-    filter: 'sender_role=eq.user',
-  }, (payload) => {
-    // Show browser notification
-    if (Notification.permission === 'granted') {
-      new Notification('💬 New Support Message', {
-        body: 'A user sent a new support message',
-        icon: '/favicon.ico',
-      })
+  useEffect(() => {
+    if (pathname === '/admin/login') {
+      setReady(true)
+      return
     }
-    // Update pending count
-    setStats(prev => ({ ...prev, pending: prev.pending + 1 }))
-  })
-  .subscribe()
 
-// Listen for new user registrations
-supabaseClient
-  .channel('admin-users')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'users',
-  }, (payload) => {
-    if (Notification.permission === 'granted') {
-      new Notification('👤 New User Registered', {
-        body: `A new trader just joined CapitalMarket Pro`,
-        icon: '/favicon.ico',
-      })
-    }
-    setStats(prev => ({ ...prev, users: prev.users + 1 }))
-  })
-  .subscribe()
+    const init = async () => {
+      try {
+        const supabase = createClient()
 
-// Request notification permission
-if (typeof window !== 'undefined' && Notification.permission === 'default') {
-  Notification.requestPermission()
-}
-    if (pathname === '/admin/login') return
-    const check = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/admin/login'); return }
-      const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
-      if (profile?.role !== 'admin') { router.push('/admin/login'); return }
-      const { count: users } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'user')
-      const { count: pending } = await supabase.from('withdrawal_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
-      setStats({ users: users || 0, pending: pending || 0 })
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!profile || profile.role !== 'admin') {
+          router.replace('/admin/login')
+          return
+        }
+
+        // Fetch stats
+        const { count: uc } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+        const { count: pc } = await supabase
+          .from('withdrawal_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending')
+
+        setUserCount(uc || 0)
+        setPending(pc || 0)
+
+        // Notifications
+        const notifs: any[] = []
+        const { data: ws } = await supabase
+          .from('withdrawal_requests')
+          .select('id, amount, created_at, user:users(email)')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(5)
+        const { data: nu } = await supabase
+          .from('users')
+          .select('email, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        ws?.forEach(w => notifs.push({
+          icon: '⬆', color: '#F7A600',
+          title: 'Pending Withdrawal',
+          desc: `${(w.user as any)?.email} — $${w.amount}`,
+          time: w.created_at,
+          href: '/admin/withdrawals'
+        }))
+        nu?.forEach(u => notifs.push({
+          icon: '👤', color: '#3fb950',
+          title: 'New User',
+          desc: u.email,
+          time: u.created_at,
+          href: '/admin/users'
+        }))
+        notifs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        setNotifications(notifs.slice(0, 8))
+        setReady(true)
+      } catch (err) {
+        console.error(err)
+        router.replace('/admin/login')
+      }
     }
-  check()
-  setAuthChecked(true)
-}, [pathname])
+
+    init()
+  }, [pathname])
 
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
-if (pathname === '/admin/login') return <>{children}</>
+  // If login page just render children
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
 
-return (
-  <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', display: 'flex' }}>
-    {/* Mobile overlay */}
+  // Loading screen
+  if (!ready) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#060a0f',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'monospace',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 16,
+            background: 'linear-gradient(135deg, #f85149, #ff6b6b)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, fontWeight: 800, color: '#fff',
+            margin: '0 auto 20px', boxShadow: '0 0 40px rgba(248,81,73,0.3)',
+          }}>A</div>
+          <div style={{ fontSize: 14, color: '#C9A84C', marginBottom: 8 }}>Loading Admin Panel...</div>
+          <div style={{ fontSize: 11, color: '#484f58' }}>Verifying credentials</div>
+          <div style={{ marginTop: 20, width: 120, height: 2, background: '#161b22', borderRadius: 2, margin: '20px auto 0', overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: 'linear-gradient(90deg, #f85149, #ff6b6b)', borderRadius: 2, animation: 'load 1.5s ease infinite' }} />
+          </div>
+        </div>
+        <style>{`@keyframes load { 0%{width:0%} 50%{width:100%} 100%{width:0%} }`}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', display: 'flex', position: 'relative' }}>
+
+      {/* Mobile Overlay */}
       {mobileOpen && (
-        <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 998 }} />
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 997 }}
+        />
       )}
 
       {/* Sidebar */}
-<div style={{
-  width: 220, background: '#0d1117', borderRight: '1px solid #161b22',
-  display: 'flex', flexDirection: 'column', position: 'fixed',
-  top: 0, left: 0, height: '100vh', zIndex: 999, overflowY: 'auto',
-  transition: 'transform 0.3s ease',
-  transform: mobileOpen ? 'translateX(0)' : undefined,
-}} className="admin-sidebar">
-  {/* Logo */}
-        <div style={{ padding: '18px 16px', borderBottom: '1px solid #161b22' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #f85149, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>A</div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#f85149', lineHeight: 1.2 }}>ADMIN PANEL</div>
-              <div style={{ fontSize: 9, color: '#484f58', letterSpacing: '0.08em' }}>CapitalMarket Pro</div>
+      <div style={{
+        width: 220,
+        background: '#0d1117',
+        borderRight: '1px solid #161b22',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        top: 0, left: 0,
+        height: '100vh',
+        zIndex: 998,
+        overflowY: 'auto',
+        transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+      }} id="admin-sidebar">
+
+        {/* Logo */}
+        <div style={{ padding: '16px', borderBottom: '1px solid #161b22', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #f85149, #ff6b6b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0 }}>A</div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#f85149', lineHeight: 1.2 }}>ADMIN PANEL</div>
+                <div style={{ fontSize: 9, color: '#484f58' }}>CapitalMarket Pro</div>
+              </div>
             </div>
+            <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 18, cursor: 'pointer', padding: '4px 6px', lineHeight: 1 }}>✕</button>
           </div>
-          {/* Quick stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3' }}>{stats.users}</div>
+            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3' }}>{userCount}</div>
               <div style={{ fontSize: 9, color: '#484f58' }}>Users</div>
             </div>
-            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#F7A600' }}>{stats.pending}</div>
+            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: pending > 0 ? '#F7A600' : '#e6edf3' }}>{pending}</div>
               <div style={{ fontSize: 9, color: '#484f58' }}>Pending</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <div style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '8px', overflowY: 'auto' }}>
           {navItems.map(item => {
             const active = pathname === item.href
             return (
               <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 8, marginBottom: 2, background: active ? 'rgba(248,81,73,0.1)' : 'transparent', borderLeft: active ? '2px solid #f85149' : '2px solid transparent' }}>
-                  <span style={{ fontSize: 15, flexShrink: 0, width: 18, textAlign: 'center' }}>{item.icon}</span>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px', borderRadius: 8, marginBottom: 2,
+                  background: active ? 'rgba(248,81,73,0.1)' : 'transparent',
+                  borderLeft: `2px solid ${active ? '#f85149' : 'transparent'}`,
+                }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
                   <span style={{ fontSize: 12, color: active ? '#e6edf3' : '#8b949e' }}>{item.label}</span>
+                  {item.href === '/admin/withdrawals' && pending > 0 && (
+                    <span style={{ marginLeft: 'auto', fontSize: 9, color: '#060a0f', background: '#F7A600', padding: '2px 6px', borderRadius: 10, fontWeight: 800 }}>{pending}</span>
+                  )}
                 </div>
               </Link>
             )
           })}
         </div>
 
-        {/* View Site + Logout */}
-        <div style={{ padding: '12px 8px', borderTop: '1px solid #161b22', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Link href="/" target="_blank" style={{ textDecoration: 'none' }}>
-            <div style={{ padding: '9px 12px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 8, fontSize: 12, color: '#C9A84C', textAlign: 'center', cursor: 'pointer' }}>
+        {/* Bottom */}
+        <div style={{ padding: '10px 8px', borderTop: '1px solid #161b22', flexShrink: 0 }}>
+          <Link href="/" target="_blank" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
+            <div style={{ padding: '9px 12px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 8, fontSize: 12, color: '#C9A84C', textAlign: 'center' }}>
               🌐 View Site
             </div>
           </Link>
-          <button onClick={async () => {
-            const supabase = createClient()
-            await supabase.auth.signOut()
-            router.push('/admin/login')
-          }} style={{ padding: '9px 12px', background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 8, color: '#f85149', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>
+          <button
+            onClick={async () => {
+              const supabase = createClient()
+              await supabase.auth.signOut()
+              router.replace('/admin/login')
+            }}
+            style={{ width: '100%', padding: '9px 12px', background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 8, color: '#f85149', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>
             🚪 Logout
           </button>
         </div>
       </div>
 
-      {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: 220, minWidth: 0 }} className="admin-main">
+      {/* Main Content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: '100vh' }}>
+
         {/* Topbar */}
-        <div style={{ background: '#0d1117', borderBottom: '1px solid #161b22', padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{
+          background: '#0d1117', borderBottom: '1px solid #161b22',
+          padding: '0 16px', height: 54,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 0, zIndex: 50, flexShrink: 0,
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="admin-hamburger" style={{ background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', display: 'none' }}>☰</button>
-            <div style={{ fontSize: 12, color: '#484f58' }}>Admin Control Panel</div>
+            {/* Hamburger — always visible */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              style={{ background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
+              ☰
+            </button>
+            <div style={{ fontSize: 12, color: '#484f58' }}>Admin Panel</div>
           </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 10, color: '#f85149', background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', padding: '4px 12px', borderRadius: 20 }}>🔴 ADMIN</div>
-            {stats.pending > 0 && (
-              <Link href="/admin/withdrawals" style={{ textDecoration: 'none' }}>
-                <div style={{ fontSize: 10, color: '#F7A600', background: 'rgba(247,166,0,0.1)', border: '1px solid rgba(247,166,0,0.2)', padding: '4px 12px', borderRadius: 20, cursor: 'pointer' }}>
-                  ⏳ {stats.pending} pending
-                </div>
-              </Link>
-            )}
+            <div style={{ fontSize: 10, color: '#f85149', background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+              🔴 ADMIN
+            </div>
+
+            {/* Notification Bell */}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setBellOpen(!bellOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, position: 'relative', display: 'flex' }}>
+                <span style={{ fontSize: 18 }}>🔔</span>
+                {notifications.length > 0 && (
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: 15, height: 15, borderRadius: '50%', background: '#f85149', fontSize: 8, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {notifications.length > 9 ? '9+' : notifications.length}
+                  </div>
+                )}
+              </button>
+
+              {bellOpen && (
+                <>
+                  <div onClick={() => setBellOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
+                  <div style={{ position: 'absolute', top: 40, right: 0, width: 280, background: '#0d1117', border: '1px solid #21262d', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 99, overflow: 'hidden' }}>
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #161b22', fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>
+                      Notifications
+                    </div>
+                    <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: 20, textAlign: 'center', color: '#484f58', fontSize: 12 }}>All clear!</div>
+                      ) : notifications.map((n, i) => (
+                        <Link key={i} href={n.href} onClick={() => setBellOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
+                          <div style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid #161b22' }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${n.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>{n.icon}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: n.color, marginBottom: 1 }}>{n.title}</div>
+                              <div style={{ fontSize: 11, color: '#8b949e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.desc}</div>
+                              <div style={{ fontSize: 10, color: '#484f58', marginTop: 2 }}>{new Date(n.time).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Content */}
+        {/* Page Content */}
         <div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
           {children}
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .admin-sidebar { transform: translateX(-100%); }
-          .admin-hamburger { display: block !important; }
-          .admin-main { margin-left: 0 !important; }
-        }
-      `}</style>
     </div>
   )
 }
