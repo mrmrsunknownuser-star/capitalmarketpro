@@ -101,9 +101,11 @@ export default function DashboardLayout({
             background: 'linear-gradient(135deg, #C9A84C, #E8D08C)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 18, fontWeight: 700, color: '#060a0f', flexShrink: 0,
-          }}>V</div>
-          {sidebarOpen && <span style={{ fontSize: 14, fontWeight: 700, color: '#C9A84C', letterSpacing: '0.08em' }}>VAULTFLOW</span>}
-        </div>
+          }}>C</div>
+          {sidebarOpen && <div>
+  <div style={{ fontSize: 13, fontWeight: 700, color: '#C9A84C', letterSpacing: '0.04em' }}>CapitalMarket</div>
+  <div style={{ fontSize: 10, fontWeight: 700, color: '#8b949e', letterSpacing: '0.04em' }}>Pro</div>
+</div>}
 
         {/* Nav */}
         <div style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
@@ -184,6 +186,7 @@ export default function DashboardLayout({
   {children}
 </div>
       </div>
+    </div>
     </div>
     )
 }

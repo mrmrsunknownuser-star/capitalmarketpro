@@ -1,5 +1,5 @@
 'use client'
-
+import WithdrawalPopup from '@/components/WithdrawalPopup'
 import { useState } from 'react'
 import Link from 'next/link'
 
