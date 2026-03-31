@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
             <span style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>A</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#e6edf3' }}>Admin Portal</div>
-          <div style={{ fontSize: 12, color: '#484f58', marginTop: 4 }}>VaultFlow Control Center</div>
+          <div style={{ fontSize: 12, color: '#484f58', marginTop: 4 }}>CapitalMarket Pro Control Center</div>
         </div>
 
         <div style={{ background: '#0d1117', border: '1px solid #21262d', borderRadius: 16, padding: 32 }}>
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@vaultflow.com"
+                placeholder="admin@capitalmarketpro.com"
                 required
                 style={{ width: '100%', background: '#161b22', border: '1px solid #30363d', borderRadius: 8, padding: '12px 16px', color: '#e6edf3', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
               />

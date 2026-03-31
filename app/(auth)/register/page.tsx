@@ -45,15 +45,15 @@ await fetch('/api/email', {
     <div className="w-full max-w-md">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9A84C] to-[#E8D08C] mb-4">
-          <span className="text-xl font-bold text-[#060a0f]">V</span>
+          <span className="text-xl font-bold text-[#060a0f]">C</span>
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">VaultFlow</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">CapitalMarket Pro</h1>
         <p className="text-[#8b949e] text-sm mt-1">Create your account</p>
       </div>
 
       <div className="bg-[#0d1117] border border-[#21262d] rounded-2xl p-8">
         <h2 className="text-lg font-semibold text-white mb-2">Get started today</h2>
-        <p className="text-[#8b949e] text-sm mb-6">Join thousands of traders on VaultFlow</p>
+        <p className="text-[#8b949e] text-sm mb-6">Join thousands of traders on CapitalMarket Pro</p>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">

@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9A84C] to-[#E8D08C] mb-4">
           <span className="text-xl font-bold text-[#060a0f]">CM</span>
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">VaultFlow</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">CapitalMarket Pro</h1>
         <p className="text-[#8b949e] text-sm mt-1">Reset your password</p>
       </div>
 
