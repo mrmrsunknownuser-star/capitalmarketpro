@@ -1,9 +1,65 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+const TickerBar = () => {
+  const [prices, setPrices] = useState([
+    { symbol: 'BTC', price: '67,240', change: '+2.4%', positive: true },
+    { symbol: 'ETH', price: '3,480', change: '+1.8%', positive: true },
+    { symbol: 'SOL', price: '142.30', change: '+5.2%', positive: true },
+    { symbol: 'BNB', price: '412.80', change: '-0.8%', positive: false },
+    { symbol: 'AAPL', price: '189.30', change: '-0.6%', positive: false },
+    { symbol: 'NVDA', price: '875.40', change: '+3.2%', positive: true },
+    { symbol: 'MSFT', price: '415.20', change: '+1.1%', positive: true },
+    { symbol: 'TSLA', price: '248.60', change: '-1.4%', positive: false },
+    { symbol: 'XRP', price: '0.6240', change: '+4.1%', positive: true },
+    { symbol: 'ADA', price: '0.4820', change: '+2.8%', positive: true },
+  ])
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin,ripple,cardano&vs_currencies=usd&include_24hr_change=true')
+        const data = await res.json()
+        setPrices(prev => prev.map(p => {
+          const map: Record<string, string> = { BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin', XRP: 'ripple', ADA: 'cardano' }
+          const key = map[p.symbol]
+          if (key && data[key]) {
+            const price = data[key].usd
+            const change = data[key].usd_24h_change?.toFixed(2)
+            return { ...p, price: price.toLocaleString(), change: `${change > 0 ? '+' : ''}${change}%`, positive: change > 0 }
+          }
+          return p
+        }))
+      } catch {}
+    }
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div style={{ background: '#0a0e14', borderBottom: '1px solid #161b22', overflow: 'hidden', height: 36, display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 0, animation: 'ticker 30s linear infinite', whiteSpace: 'nowrap' }}>
+        {[...prices, ...prices].map((p, i) => (
+          <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 24px', borderRight: '1px solid #161b22' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', letterSpacing: '0.06em' }}>{p.symbol}</span>
+            <span style={{ fontSize: 11, color: '#8b949e' }}>${p.price}</span>
+            <span style={{ fontSize: 10, color: p.positive ? '#3fb950' : '#f85149' }}>{p.change}</span>
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  )
+}
 const navItems = [
   { icon: '▦', label: 'Overview', href: '/dashboard' },
   { icon: '📊', label: 'Portfolio', href: '/dashboard/portfolio' },
@@ -119,11 +175,14 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Page content */}
-        <div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
-          {children}
-        </div>
+        {/* Ticker */}
+<TickerBar />
+
+{/* Page content */}
+<div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
+  {children}
+</div>
       </div>
     </div>
-  )
+    )
 }
