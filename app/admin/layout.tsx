@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -25,20 +25,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userCount, setUserCount] = useState(0)
   const [notifications, setNotifications] = useState<any[]>([])
   const [bellOpen, setBellOpen] = useState(false)
+  const realtimeSetup = useRef(false)
 
+  // ── AUTH CHECK (runs on pathname change) ──
   useEffect(() => {
     if (pathname === '/admin/login') {
       setReady(true)
       return
     }
 
-    const init = async () => {
+    const checkAuth = async () => {
       try {
         const supabase = createClient()
-
-        // Auth check
         const { data: { session } } = await supabase.auth.getSession()
-        if (!session) { router.replace('/admin/login'); return }
+
+        if (!session) {
+          router.replace('/admin/login')
+          return
+        }
 
         const { data: profile } = await supabase
           .from('users')
@@ -63,7 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setUserCount(uc || 0)
         setPending(pc || 0)
 
-        // Fetch initial notifications
+        // Fetch notifications
         const notifs: any[] = []
 
         const { data: ws } = await supabase
@@ -81,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         const { data: msgs } = await supabase
           .from('support_messages')
-          .select('id, message, created_at, chat_id')
+          .select('id, message, created_at')
           .eq('sender_role', 'user')
           .order('created_at', { ascending: false })
           .limit(5)
@@ -96,7 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         nu?.forEach(u => notifs.push({
           icon: '👤', color: '#3fb950',
-          title: 'New User Registered',
+          title: 'New User',
           desc: u.email,
           time: u.created_at,
           href: '/admin/users',
@@ -105,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         msgs?.forEach(m => notifs.push({
           icon: '💬', color: '#7B2BF9',
           title: 'Support Message',
-          desc: (m.message as string)?.slice(0, 50) + '...',
+          desc: (m.message as string)?.slice(0, 50) || '',
           time: m.created_at,
           href: '/admin/support',
         }))
@@ -113,125 +117,143 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         notifs.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         setNotifications(notifs.slice(0, 10))
 
-        // ── REALTIME: New support messages ──
-        supabase
-          .channel('admin-support-watch')
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'support_messages',
-            filter: 'sender_role=eq.user',
-          }, async (payload) => {
-            const { data: chatData } = await supabase
-              .from('support_chats')
-              .select('user:users(email, full_name)')
-              .eq('id', (payload.new as any).chat_id)
-              .single()
-
-            const userName = (chatData?.user as any)?.full_name
-              || (chatData?.user as any)?.email
-              || 'A user'
-
-            const newNotif = {
-              icon: '💬',
-              color: '#7B2BF9',
-              title: 'New Support Message',
-              desc: `${userName}: "${(payload.new as any).message?.slice(0, 50)}"`,
-              time: new Date().toISOString(),
-              href: '/admin/support',
-            }
-
-            setNotifications(prev => [newNotif, ...prev].slice(0, 10))
-
-            // Browser push notification
-            if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('💬 New Support Message', {
-                body: `${userName}: ${(payload.new as any).message?.slice(0, 60)}`,
-                icon: '/favicon.ico',
-              })
-            }
-          })
-          .subscribe()
-
-        // ── REALTIME: New users ──
-        supabase
-          .channel('admin-users-watch')
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'users',
-          }, (payload) => {
-            const newUser = payload.new as any
-            if (newUser.role === 'admin') return
-
-            const newNotif = {
-              icon: '👤',
-              color: '#3fb950',
-              title: 'New User Registered',
-              desc: newUser.email || 'New trader joined',
-              time: new Date().toISOString(),
-              href: '/admin/users',
-            }
-
-            setNotifications(prev => [newNotif, ...prev].slice(0, 10))
-            setUserCount(prev => prev + 1)
-
-            if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('👤 New User Registered', {
-                body: `${newUser.email} just joined CapitalMarket Pro`,
-                icon: '/favicon.ico',
-              })
-            }
-          })
-          .subscribe()
-
-        // ── REALTIME: New withdrawals ──
-        supabase
-          .channel('admin-withdrawals-watch')
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'withdrawal_requests',
-          }, (payload) => {
-            const w = payload.new as any
-            setNotifications(prev => [{
-              icon: '⬆',
-              color: '#F7A600',
-              title: 'New Withdrawal Request',
-              desc: `$${w.amount} withdrawal pending`,
-              time: new Date().toISOString(),
-              href: '/admin/withdrawals',
-            }, ...prev].slice(0, 10))
-            setPending(prev => prev + 1)
-
-            if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('⬆ New Withdrawal Request', {
-                body: `$${w.amount} withdrawal needs approval`,
-                icon: '/favicon.ico',
-              })
-            }
-          })
-          .subscribe()
-
-        // Request browser notification permission
-        if (typeof window !== 'undefined' && Notification.permission === 'default') {
-          Notification.requestPermission()
-        }
-
         setReady(true)
-      } catch (err) {
-        console.error(err)
+      } catch {
         router.replace('/admin/login')
       }
     }
 
-    init()
+    checkAuth()
   }, [pathname])
+
+  // ── REALTIME (runs only once when ready) ──
+  useEffect(() => {
+    if (!ready || pathname === '/admin/login') return
+    if (realtimeSetup.current) return
+    realtimeSetup.current = true
+
+    const supabase = createClient()
+
+    // New support messages
+    const supportCh = supabase
+      .channel('rt-support')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: 'sender_role=eq.user',
+      }, async (payload) => {
+        try {
+          const { data: chatData } = await supabase
+            .from('support_chats')
+            .select('user:users(email, full_name)')
+            .eq('id', (payload.new as any).chat_id)
+            .single()
+
+          const userName =
+            (chatData?.user as any)?.full_name ||
+            (chatData?.user as any)?.email ||
+            'A user'
+
+          const notif = {
+            icon: '💬', color: '#7B2BF9',
+            title: 'New Support Message',
+            desc: `${userName}: "${(payload.new as any).message?.slice(0, 50)}"`,
+            time: new Date().toISOString(),
+            href: '/admin/support',
+          }
+
+          setNotifications(prev => [notif, ...prev].slice(0, 10))
+
+          if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('💬 New Support Message', {
+              body: `${userName}: ${(payload.new as any).message?.slice(0, 60)}`,
+              icon: '/favicon.ico',
+            })
+          }
+        } catch {}
+      })
+      .subscribe()
+
+    // New users
+    const usersCh = supabase
+      .channel('rt-users')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'users',
+      }, (payload) => {
+        const newUser = payload.new as any
+        if (newUser.role === 'admin') return
+
+        const notif = {
+          icon: '👤', color: '#3fb950',
+          title: 'New User Registered',
+          desc: newUser.email || 'New trader joined',
+          time: new Date().toISOString(),
+          href: '/admin/users',
+        }
+
+        setNotifications(prev => [notif, ...prev].slice(0, 10))
+        setUserCount(prev => prev + 1)
+
+        if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('👤 New User Registered', {
+            body: `${newUser.email} just joined CapitalMarket Pro`,
+            icon: '/favicon.ico',
+          })
+        }
+      })
+      .subscribe()
+
+    // New withdrawals
+    const withdrawalCh = supabase
+      .channel('rt-withdrawals')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'withdrawal_requests',
+      }, (payload) => {
+        const w = payload.new as any
+
+        const notif = {
+          icon: '⬆', color: '#F7A600',
+          title: 'New Withdrawal Request',
+          desc: `$${w.amount} withdrawal pending approval`,
+          time: new Date().toISOString(),
+          href: '/admin/withdrawals',
+        }
+
+        setNotifications(prev => [notif, ...prev].slice(0, 10))
+        setPending(prev => prev + 1)
+
+        if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('⬆ New Withdrawal Request', {
+            body: `$${w.amount} needs your approval`,
+            icon: '/favicon.ico',
+          })
+        }
+      })
+      .subscribe()
+
+    // Request browser notification permission
+    if (typeof window !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
+    return () => {
+      supabase.removeChannel(supportCh)
+      supabase.removeChannel(usersCh)
+      supabase.removeChannel(withdrawalCh)
+    }
+  }, [ready])
 
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
+  // Login page — just render children
   if (pathname === '/admin/login') return <>{children}</>
 
+  // Loading screen
   if (!ready) {
     return (
       <div style={{ minHeight: '100vh', background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace' }}>
@@ -243,7 +265,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div style={{ height: '100%', background: 'linear-gradient(90deg, #f85149, #ff6b6b)', borderRadius: 2, animation: 'load 1.5s ease infinite' }} />
           </div>
         </div>
-        <style>{`@keyframes load { 0%{width:0%} 50%{width:100%} 100%{width:0%} }`}</style>
+        <style>{`@keyframes load{0%{width:0%}50%{width:100%}100%{width:0%}}`}</style>
       </div>
     )
   }
@@ -268,7 +290,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         height: '100vh',
         zIndex: 998,
         overflowY: 'auto',
-        transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+        transition: 'transform 0.28s ease',
         transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
       }}>
 
@@ -282,16 +304,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div style={{ fontSize: 9, color: '#484f58' }}>CapitalMarket Pro</div>
               </div>
             </div>
-            <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 18, cursor: 'pointer', padding: '4px 6px', lineHeight: 1 }}>✕</button>
+            <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 18, cursor: 'pointer', padding: '4px 6px' }}>✕</button>
           </div>
-
-          {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+            <div style={{ background: '#161b22', borderRadius: 8, padding: 8, textAlign: 'center' }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3' }}>{userCount}</div>
               <div style={{ fontSize: 9, color: '#484f58' }}>Users</div>
             </div>
-            <div style={{ background: '#161b22', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+            <div style={{ background: '#161b22', borderRadius: 8, padding: 8, textAlign: 'center' }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: pending > 0 ? '#F7A600' : '#e6edf3' }}>{pending}</div>
               <div style={{ fontSize: 9, color: '#484f58' }}>Pending</div>
             </div>
@@ -304,12 +324,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const active = pathname === item.href
             return (
               <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 12px', borderRadius: 8, marginBottom: 2,
-                  background: active ? 'rgba(248,81,73,0.1)' : 'transparent',
-                  borderLeft: `2px solid ${active ? '#f85149' : 'transparent'}`,
-                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 2, background: active ? 'rgba(248,81,73,0.1)' : 'transparent', borderLeft: `2px solid ${active ? '#f85149' : 'transparent'}` }}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
                   <span style={{ fontSize: 12, color: active ? '#e6edf3' : '#8b949e', fontWeight: active ? 700 : 400 }}>{item.label}</span>
                   {item.href === '/admin/withdrawals' && pending > 0 && (
@@ -340,29 +355,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: '100vh' }}>
 
         {/* Topbar */}
-        <div style={{
-          background: '#0d1117',
-          borderBottom: '1px solid #161b22',
-          padding: '0 16px',
-          height: 54,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          flexShrink: 0,
-        }}>
+        <div style={{ background: '#0d1117', borderBottom: '1px solid #161b22', padding: '0 16px', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50, flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              onClick={() => setMobileOpen(true)}
-              style={{ background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
-              ☰
-            </button>
+            <button onClick={() => setMobileOpen(true)} style={{ background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', padding: 4, lineHeight: 1, display: 'flex', alignItems: 'center' }}>☰</button>
             <div style={{ fontSize: 12, color: '#484f58' }}>Admin Panel</div>
           </div>
 
@@ -371,11 +370,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               🔴 ADMIN
             </div>
 
-            {/* Notification Bell */}
+            {/* Bell */}
             <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setBellOpen(!bellOpen)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, position: 'relative', display: 'flex' }}>
+              <button onClick={() => setBellOpen(!bellOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, position: 'relative', display: 'flex' }}>
                 <span style={{ fontSize: 18 }}>🔔</span>
                 {notifications.length > 0 && (
                   <div style={{ position: 'absolute', top: 0, right: 0, width: 15, height: 15, borderRadius: '50%', background: '#f85149', fontSize: 8, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -389,12 +386,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <div onClick={() => setBellOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
                   <div style={{ position: 'absolute', top: 40, right: 0, width: 300, background: '#0d1117', border: '1px solid #21262d', borderRadius: 14, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', zIndex: 99, overflow: 'hidden' }}>
                     <div style={{ padding: '12px 16px', borderBottom: '1px solid #161b22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>Admin Notifications</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>Notifications</div>
                       <div style={{ fontSize: 10, color: '#484f58' }}>{notifications.length} items</div>
                     </div>
                     <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                       {notifications.length === 0 ? (
-                        <div style={{ padding: 24, textAlign: 'center', color: '#484f58', fontSize: 12 }}>All clear! No pending items.</div>
+                        <div style={{ padding: 24, textAlign: 'center', color: '#484f58', fontSize: 12 }}>All clear!</div>
                       ) : notifications.map((n, i) => (
                         <Link key={i} href={n.href} onClick={() => setBellOpen(false)} style={{ textDecoration: 'none', display: 'block' }}>
                           <div style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid #161b22' }}>
@@ -410,7 +407,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                     <div style={{ padding: '10px 16px', borderTop: '1px solid #161b22', textAlign: 'center' }}>
                       <button onClick={() => { setNotifications([]); setBellOpen(false) }} style={{ fontSize: 11, color: '#484f58', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}>
-                        Clear all notifications
+                        Clear all
                       </button>
                     </div>
                   </div>
@@ -420,7 +417,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Page Content */}
+        {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', background: '#060a0f' }}>
           {children}
         </div>
