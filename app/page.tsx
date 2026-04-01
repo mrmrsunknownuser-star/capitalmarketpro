@@ -270,6 +270,136 @@ const PLANS = [
     </div>
   </div>
 </section>
+{/* ── TEAM ── */}
+<section style={{ padding: '70px 20px', borderTop: '1px solid #161b22' }}>
+  <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ textAlign: 'center', marginBottom: 48 }}>
+      <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Leadership Team</div>
+      <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>
+        World-Class Financial Professionals
+      </h2>
+      <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 500, margin: '0 auto' }}>
+        Our leadership team brings decades of combined experience from the world's top financial institutions.
+      </p>
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      {[
+        {
+          initials: 'JE', name: 'Joshua C. Elder', role: 'Account Manager',
+          dept: 'Client Portfolio Management', color: '#C9A84C',
+          badge: '👑', exp: '14yr', rate: '$2.4B+',
+          bg: 'linear-gradient(135deg, #C9A84C22, #C9A84C08)',
+          desc: 'Former Goldman Sachs VP. CFA-certified portfolio manager specializing in crypto and equity markets.',
+          tags: ['CFA', 'Goldman Sachs', 'SEC Reg.'],
+        },
+        {
+          initials: 'RK', name: 'Robert K. Hayes', role: 'Chief Executive Officer',
+          dept: 'Executive Leadership', color: '#0052FF',
+          badge: '🏛', exp: '18yr', rate: '150K+',
+          bg: 'linear-gradient(135deg, #0052FF22, #0052FF08)',
+          desc: 'Ex-BlackRock Managing Director with 18 years leading global investment platforms.',
+          tags: ['BlackRock', 'Harvard MBA', 'CFA'],
+        },
+        {
+          initials: 'SC', name: 'Sophia C. Laurent', role: 'Chief Crypto Strategist',
+          dept: 'Digital Asset Markets', color: '#F7A600',
+          badge: '₿', exp: '11yr', rate: '84%',
+          bg: 'linear-gradient(135deg, #F7A60022, #F7A60008)',
+          desc: 'Pioneer Bitcoin strategist. Built trading algorithms managing $800M+ in digital assets.',
+          tags: ['MIT Alumni', 'CMT', 'DeFi Expert'],
+        },
+        {
+          initials: 'MO', name: 'Marcus O. Sterling', role: 'Head of Stock Trading',
+          dept: 'Equity & ETF Markets', color: '#3fb950',
+          badge: '📈', exp: '9yr', rate: '91%',
+          bg: 'linear-gradient(135deg, #3fb95022, #3fb95008)',
+          desc: 'Former Morgan Stanley equity analyst. Specializes in high-growth tech and emerging markets.',
+          tags: ['Morgan Stanley', 'CFA', 'CMT'],
+        },
+        {
+          initials: 'AL', name: 'Amanda L. Brooks', role: 'Affiliate Director',
+          dept: 'Partner & Growth', color: '#7B2BF9',
+          badge: '🔗', exp: '8yr', rate: '60+ ctrs',
+          bg: 'linear-gradient(135deg, #7B2BF922, #7B2BF908)',
+          desc: 'Built and scaled global affiliate networks generating $12M+ in partner payouts annually.',
+          tags: ['Growth Expert', 'Wharton MBA'],
+        },
+        {
+          initials: 'DR', name: 'Daniel R. Okonkwo', role: 'Risk & Compliance Officer',
+          dept: 'Risk Management', color: '#f85149',
+          badge: '🛡', exp: '12yr', rate: '0% Loss',
+          bg: 'linear-gradient(135deg, #f8514922, #f8514908)',
+          desc: 'Former hedge fund risk officer. Ensures 100% client fund protection and regulatory compliance.',
+          tags: ['FRM', 'FINRA', 'AML Cert.'],
+        },
+        {
+          initials: 'PP', name: 'Priya P. Sharma', role: 'Head of AI Signals',
+          dept: 'Algorithmic Trading', color: '#00B386',
+          badge: '⚡', exp: '7yr', rate: '84% acc.',
+          bg: 'linear-gradient(135deg, #00B38622, #00B38608)',
+          desc: 'Quant researcher who architected our AI signal engine using ML models trained on 15+ years of data.',
+          tags: ['MIT PhD', 'ML Expert', 'Quant'],
+        },
+        {
+          initials: 'JF', name: 'James F. Whitmore', role: 'Platform Administrator',
+          dept: 'Security & Infrastructure', color: '#8b949e',
+          badge: '🔒', exp: '10yr', rate: '99.9%',
+          bg: 'linear-gradient(135deg, #8b949e22, #8b949e08)',
+          desc: 'Cybersecurity veteran ensuring platform integrity, 24/7 uptime, and maximum security for all funds.',
+          tags: ['CISSP', 'AWS Expert', 'SOC2'],
+        },
+      ].map(member => (
+        <div key={member.name} style={{ background: member.bg, border: `1px solid ${member.color}33`, borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -15, right: -15, width: 70, height: 70, borderRadius: '50%', background: `${member.color}06` }} />
+
+          {/* Avatar */}
+          <div style={{ position: 'relative', marginBottom: 14 }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${member.color}, ${member.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f', border: `3px solid ${member.color}44` }}>
+              {member.initials}
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 18, height: 18, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, border: '2px solid #060a0f' }}>✓</div>
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#e6edf3' }}>{member.name}</div>
+              <span style={{ fontSize: 10 }}>{member.badge}</span>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: member.color, marginBottom: 1 }}>{member.role}</div>
+            <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{member.dept}</div>
+          </div>
+
+          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7, marginBottom: 12 }}>{member.desc}</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
+            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: member.color }}>{member.exp}</div>
+              <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase' }}>Experience</div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: member.color }}>{member.rate}</div>
+              <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase' }}>Track Record</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {member.tags.map(tag => (
+              <div key={tag} style={{ fontSize: 9, color: member.color, background: `${member.color}12`, border: `1px solid ${member.color}22`, padding: '2px 7px', borderRadius: 4 }}>{tag}</div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Certifications */}
+    <div style={{ marginTop: 28, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {['🏛 SEC Registered', '📜 CFA Institute', '🛡 FINRA Compliant', '🌍 FCA Authorized', '⚖️ AML Certified', '💎 SOC 2 Type II'].map(c => (
+        <div key={c} style={{ fontSize: 11, color: '#8b949e', background: '#0d1117', border: '1px solid #161b22', padding: '6px 14px', borderRadius: 20 }}>{c}</div>
+      ))}
+    </div>
+  </div>
+</section>
 
 const TESTIMONIALS = [
   { name: 'Michael R.', role: 'Professional Trader', text: 'CapitalMarket Pro changed how I manage my portfolio. Having crypto, stocks and affiliate income in one dashboard is a game changer.', avatar: 'M' },

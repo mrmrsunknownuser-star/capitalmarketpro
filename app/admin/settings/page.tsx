@@ -11,15 +11,24 @@ export default function AdminSettingsPage() {
   const [withdrawFee, setWithdrawFee] = useState('5')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [joshuaPhoto, setJoshuaPhoto] = useState('')
 
-  useEffect(() => {
-    const init = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setAdmin(user)
-    }
-    init()
-  }, [])
+useEffect(() => {
+  const init = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) setAdmin(user)
+    
+    // Get Joshua's photo
+    const { data: joshuaData } = await supabase
+      .from('users')
+      .select('avatar_url')
+      .eq('email', 'admin@capitalmarketpro.com')
+      .single()
+    if (joshuaData?.avatar_url) setJoshuaPhoto(joshuaData.avatar_url)
+  }
+  init()
+}, [])
 
   const save = async () => {
     setLoading(true)
@@ -73,6 +82,36 @@ export default function AdminSettingsPage() {
 
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>₿ Master BTC Deposit Address</label>
+          {/* Joshua Avatar Upload */}
+<div style={{ marginBottom: 20 }}>
+  <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 4 }}>👤 Joshua Elder — Account Manager Photo</div>
+  <div style={{ fontSize: 11, color: '#484f58', marginBottom: 14 }}>This photo appears on the user dashboard and support chat</div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 800, color: '#060a0f', overflow: 'hidden', border: '3px solid rgba(201,168,76,0.4)', flexShrink: 0 }}>
+      {joshuaPhoto ? <img src={joshuaPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+    </div>
+    <div style={{ flex: 1 }}>
+      <input type="file" accept="image/*" onChange={async e => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = async ev => {
+          const base64 = ev.target?.result as string
+          setJoshuaPhoto(base64)
+          const supabase = createClient()
+          await supabase.from('users').update({ avatar_url: base64 }).eq('email', 'admin@capitalmarketpro.com')
+          setMessage('Joshua\'s photo updated!')
+          setTimeout(() => setMessage(''), 3000)
+        }
+        reader.readAsDataURL(file)
+      }} style={{ display: 'none' }} id="joshua-photo" />
+      <label htmlFor="joshua-photo" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>
+        📷 Upload Photo
+      </label>
+      <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>JPG, PNG or WEBP · Max 2MB · Will show across platform</div>
+    </div>
+  </div>
+</div>
           <input value={btcAddress} onChange={e => setBtcAddress(e.target.value)} style={{ ...inputStyle, color: '#C9A84C' }} />
           <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>This is the address shown to all users on the deposit page</div>
         </div>
