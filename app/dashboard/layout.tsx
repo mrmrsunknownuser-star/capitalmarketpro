@@ -181,11 +181,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             @media (max-width: 768px) { .mobile-bottom-nav { display: flex !important; } }
           `}</style>
           {[
-            { icon: '🏠', label: 'Home', href: '/dashboard' },
-            { icon: '📊', label: 'Market', href: '/dashboard/market' },
-            { icon: '🔄', label: 'Trade', href: '/dashboard/trade' },
-            { icon: '📰', label: 'News', href: '/dashboard/news' },
-            { icon: '☰', label: 'More', href: '#', onClick: () => setMobileOpen(true) },
+{ icon: '🏠', label: 'Home', href: '/dashboard' },
+  { icon: '💳', label: 'Cards', href: '/dashboard/card' },
+  { icon: '📰', label: 'News', href: '/dashboard/news' },
+  { icon: '🔗', label: 'Affiliate', href: '/dashboard/affiliate' },
+  { icon: '☰', label: 'More', href: '#', onClick: () => setMobileOpen(true) },
           ].map(item => (
             <div key={item.label} style={{ flex: 1, textAlign: 'center' }}>
               {item.onClick ? (
