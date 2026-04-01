@@ -189,28 +189,52 @@ export default function SupportPage() {
     }])
   }
 
-  const sendLiveMessage = async () => {
-    if (!input.trim() || !chatId || !userId) return
-    const supabase = createClient()
-    const msgContent = input
-    setInput('')
+const sendLiveMessage = async () => {
+  if (!input.trim() || !chatId || !userId) return
+  const supabase = createClient()
+  const msgContent = input
+  setInput('')
 
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      content: msgContent,
-      sender: 'user',
-      created_at: new Date().toISOString(),
-    }
-    setLiveMessages(prev => [...prev, newMsg])
+  const newMsg: Message = {
+    id: Date.now().toString(),
+    content: msgContent,
+    sender: 'user',
+    created_at: new Date().toISOString(),
+  }
+  setLiveMessages(prev => [...prev, newMsg])
 
-    await supabase.from('support_messages').insert({
-      chat_id: chatId,
-      sender_id: userId,
-      sender_role: 'user',
-      message: msgContent,
+  // Save message
+  await supabase.from('support_messages').insert({
+    chat_id: chatId,
+    sender_id: userId,
+    sender_role: 'user',
+    message: msgContent,
+  })
+
+  // Update chat timestamp
+  await supabase.from('support_chats').update({
+    updated_at: new Date().toISOString(),
+    status: 'open',
+  }).eq('id', chatId)
+
+  // Get admin user id to notify
+  const { data: adminUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('role', 'admin')
+    .single()
+
+  if (adminUser?.id) {
+    // Create admin notification
+    await supabase.from('notifications').insert({
+      user_id: adminUser.id,
+      title: '💬 New Support Message',
+      message: `A user sent: "${msgContent.slice(0, 80)}${msgContent.length > 80 ? '...' : ''}"`,
+      type: 'support',
+      is_read: false,
     })
   }
-
+}
   const handleSend = () => {
     if (tab === 'bot') sendBotMessage()
     else sendLiveMessage()
