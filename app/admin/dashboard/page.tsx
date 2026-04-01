@@ -84,6 +84,100 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+     {/* Account Manager */}
+<div style={{ marginBottom: 28 }}>
+  <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3', marginBottom: 16 }}>
+    👤 Your Account Manager
+  </div>
+  <div style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 16, padding: 24, display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap', position: 'relative', overflow: 'hidden' }}>
+
+    {/* Background glow */}
+    <div style={{ position: 'absolute', top: -30, right: -30, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+    {/* Avatar */}
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, color: '#060a0f', border: '3px solid rgba(201,168,76,0.5)', boxShadow: '0 0 30px rgba(201,168,76,0.3)' }}>
+        JE
+      </div>
+      <div style={{ position: 'absolute', bottom: 2, right: 2, width: 22, height: 22, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, border: '2px solid #0d1117', boxShadow: '0 0 8px rgba(63,185,80,0.5)' }}>✓</div>
+    </div>
+
+    {/* Info */}
+    <div style={{ flex: 1, minWidth: 200 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#e6edf3' }}>Joshua C. Elder</div>
+        <div style={{ fontSize: 10, color: '#3fb950', background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.25)', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>● ONLINE</div>
+        <div style={{ fontSize: 10, color: '#C9A84C', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>👑 GENERAL MANAGER</div>
+      </div>
+
+      <div style={{ fontSize: 12, color: '#C9A84C', fontWeight: 600, marginBottom: 10 }}>
+        Senior Portfolio Manager · CapitalMarket Pro
+      </div>
+
+      <div style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 16, maxWidth: 600 }}>
+        Joshua C. Elder is a veteran financial strategist with over 14 years of experience managing high-net-worth portfolios across cryptocurrency, equities, and alternative investments. Formerly a Vice President at Goldman Sachs Asset Management, Joshua has overseen portfolios totaling over <strong style={{ color: '#C9A84C' }}>$2.4 billion</strong> in assets. He holds a CFA designation and is a registered investment advisor. At CapitalMarket Pro, Joshua personally oversees all investment plans and ensures every client receives maximum returns from our automated trading system.
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
+        {[
+          { v: '14+', l: 'Years Experience', color: '#C9A84C' },
+          { v: '$2.4B+', l: 'Assets Managed', color: '#3fb950' },
+          { v: '4,800+', l: 'Clients Served', color: '#0052FF' },
+          { v: '84%', l: 'Avg Win Rate', color: '#7B2BF9' },
+        ].map(s => (
+          <div key={s.l} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.v}</div>
+            <div style={{ fontSize: 10, color: '#484f58' }}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Credentials */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+        {['CFA Certified', 'Goldman Sachs Alumni', 'SEC Registered', 'FINRA Licensed'].map(c => (
+          <div key={c} style={{ fontSize: 10, color: '#8b949e', background: '#161b22', border: '1px solid #21262d', padding: '4px 10px', borderRadius: 20 }}>✓ {c}</div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <Link href="/dashboard/support">
+          <button style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>
+            💬 Message Joshua
+          </button>
+        </Link>
+        <Link href="/dashboard/invest">
+          <button style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.06)', color: '#C9A84C', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
+            💹 View Investment Plans
+          </button>
+        </Link>
+      </div>
+    </div>
+
+    {/* Right side — availability card */}
+    <div style={{ flexShrink: 0, minWidth: 160 }}>
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Availability</div>
+        {[
+          { label: 'Response Time', value: '< 2 hours', color: '#3fb950' },
+          { label: 'Working Hours', value: '24/7', color: '#C9A84C' },
+          { label: 'Languages', value: 'EN, ES, FR', color: '#8b949e' },
+        ].map(item => (
+          <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #161b22' }}>
+            <span style={{ fontSize: 10, color: '#484f58' }}>{item.label}</span>
+            <span style={{ fontSize: 10, color: item.color, fontWeight: 600 }}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: 'rgba(63,185,80,0.06)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: '#3fb950', fontWeight: 700, marginBottom: 3 }}>🟢 Available Now</div>
+        <div style={{ fontSize: 10, color: '#484f58' }}>Ready to assist you</div>
+      </div>
+    </div>
+  </div>
+</div>
       {/* Recent Activity */}
       <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3', marginBottom: 16 }}>Recent Admin Activity</div>

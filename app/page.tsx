@@ -102,6 +102,174 @@ const PLANS = [
   { name: 'Elite', price: '$149', color: '#C9A84C', signals: '30', features: ['30 signals/day', 'Crypto + Stocks', 'Priority alerts', 'Advanced analysis', 'Weekly outlook', 'Risk system'] },
   { name: 'VIP', price: '$299', color: '#7B2BF9', signals: '∞', features: ['Unlimited signals', 'All markets', '24/7 Priority', 'Pro analysis', 'Daily outlook', '1-on-1 calls', 'VIP support'] },
 ]
+{/* ── TEAM / EXPERTS ── */}
+<section style={{ padding: '70px 20px', borderTop: '1px solid #161b22' }}>
+  <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ textAlign: 'center', marginBottom: 50 }}>
+      <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Our Expert Team</div>
+      <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>
+        World-Class Trading Professionals
+      </h2>
+      <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 520, margin: '0 auto' }}>
+        Our team of certified analysts, traders and portfolio managers brings decades of combined experience across global markets.
+      </p>
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      {[
+        {
+          name: 'Joshua C. Elder',
+          role: 'General Manager',
+          dept: 'Platform Leadership',
+          color: '#C9A84C',
+          bg: 'rgba(201,168,76,0.08)',
+          border: 'rgba(201,168,76,0.25)',
+          initials: 'JE',
+          badge: '👑',
+          stats: [{ v: '14yr', l: 'Experience' }, { v: '$2.4B+', l: 'Managed' }],
+          desc: 'Former Goldman Sachs VP with expertise in algorithmic trading and portfolio management.',
+          verified: true,
+        },
+        {
+          name: 'Michael Saylor',
+          role: 'Chief Crypto Analyst',
+          dept: 'Cryptocurrency Markets',
+          color: '#F7A600',
+          bg: 'rgba(247,166,0,0.08)',
+          border: 'rgba(247,166,0,0.25)',
+          initials: 'MS',
+          badge: '₿',
+          stats: [{ v: '11yr', l: 'Crypto' }, { v: '84%', l: 'Accuracy' }],
+          desc: 'Pioneer Bitcoin strategist managing over $800M in digital assets across 40+ portfolios.',
+          verified: true,
+        },
+        {
+          name: 'Sarah K. Williams',
+          role: 'Head of Stock Trading',
+          dept: 'Equity Markets',
+          color: '#3fb950',
+          bg: 'rgba(63,185,80,0.08)',
+          border: 'rgba(63,185,80,0.25)',
+          initials: 'SW',
+          badge: '📈',
+          stats: [{ v: '9yr', l: 'Stocks' }, { v: '91%', l: 'Win Rate' }],
+          desc: 'Ex-Morgan Stanley equity analyst specializing in tech and growth stocks.',
+          verified: true,
+        },
+        {
+          name: 'David A. Thompson',
+          role: 'Affiliate Director',
+          dept: 'Partner Relations',
+          color: '#7B2BF9',
+          bg: 'rgba(123,43,249,0.08)',
+          border: 'rgba(123,43,249,0.25)',
+          initials: 'DT',
+          badge: '🔗',
+          stats: [{ v: '150K+', l: 'Partners' }, { v: '$12M+', l: 'Paid Out' }],
+          desc: 'Built and scaled affiliate networks across 60+ countries with proven ROI systems.',
+          verified: true,
+        },
+        {
+          name: 'Rachel M. Chen',
+          role: 'Senior Market Analyst',
+          dept: 'Technical Analysis',
+          color: '#0052FF',
+          bg: 'rgba(0,82,255,0.08)',
+          border: 'rgba(0,82,255,0.25)',
+          initials: 'RC',
+          badge: '📊',
+          stats: [{ v: '8yr', l: 'Analysis' }, { v: '5000+', l: 'Reports' }],
+          desc: 'CMT-certified technical analyst covering crypto and equity markets daily.',
+          verified: true,
+        },
+        {
+          name: 'Omar Al-Rashid',
+          role: 'Risk Manager',
+          dept: 'Risk & Compliance',
+          color: '#f85149',
+          bg: 'rgba(248,81,73,0.08)',
+          border: 'rgba(248,81,73,0.25)',
+          initials: 'OA',
+          badge: '🛡',
+          stats: [{ v: '12yr', l: 'Risk Mgmt' }, { v: '0%', l: 'Loss Rate' }],
+          desc: 'Former hedge fund risk officer ensuring maximum protection for all client funds.',
+          verified: true,
+        },
+        {
+          name: 'Priya S. Patel',
+          role: 'Signal Strategist',
+          dept: 'AI Trading Signals',
+          color: '#00B386',
+          bg: 'rgba(0,179,134,0.08)',
+          border: 'rgba(0,179,134,0.25)',
+          initials: 'PP',
+          badge: '⚡',
+          stats: [{ v: '84%', l: 'Signal Win' }, { v: '200+', l: 'Daily Signals' }],
+          desc: 'Quant researcher who built our AI signal engine using ML models trained on 15 years of data.',
+          verified: true,
+        },
+        {
+          name: 'James O. Foster',
+          role: 'Platform Admin',
+          dept: 'Operations & Security',
+          color: '#8b949e',
+          bg: 'rgba(139,148,158,0.08)',
+          border: 'rgba(139,148,158,0.25)',
+          initials: 'JF',
+          badge: '🔒',
+          stats: [{ v: '99.9%', l: 'Uptime' }, { v: '24/7', l: 'Monitoring' }],
+          desc: 'Cybersecurity expert ensuring platform integrity and 100% fund security.',
+          verified: true,
+        },
+      ].map(member => (
+        <div key={member.name} style={{ background: member.bg, border: `1px solid ${member.border}`, borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
+          {/* Glow */}
+          <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `${member.color}08` }} />
+
+          {/* Avatar */}
+          <div style={{ position: 'relative', marginBottom: 14 }}>
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: `linear-gradient(135deg, ${member.color}, ${member.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#060a0f', border: `3px solid ${member.color}44` }}>
+              {member.initials}
+            </div>
+            {member.verified && (
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, border: '2px solid #060a0f' }}>✓</div>
+            )}
+          </div>
+
+          {/* Name & Role */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#e6edf3' }}>{member.name}</div>
+              <span style={{ fontSize: 12 }}>{member.badge}</span>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: member.color, marginBottom: 2 }}>{member.role}</div>
+            <div style={{ fontSize: 10, color: '#484f58', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{member.dept}</div>
+          </div>
+
+          {/* Description */}
+          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7, marginBottom: 14 }}>{member.desc}</div>
+
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {member.stats.map(s => (
+              <div key={s.l} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '7px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: member.color }}>{s.v}</div>
+                <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Certifications row */}
+    <div style={{ marginTop: 32, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {['🏛 SEC Registered', '📜 CFA Certified', '🛡 FINRA Compliant', '🌍 FCA Authorized', '⚖️ AML Certified'].map(c => (
+        <div key={c} style={{ fontSize: 11, color: '#8b949e', background: '#0d1117', border: '1px solid #161b22', padding: '6px 14px', borderRadius: 20 }}>{c}</div>
+      ))}
+    </div>
+  </div>
+</section>
 
 const TESTIMONIALS = [
   { name: 'Michael R.', role: 'Professional Trader', text: 'CapitalMarket Pro changed how I manage my portfolio. Having crypto, stocks and affiliate income in one dashboard is a game changer.', avatar: 'M' },
