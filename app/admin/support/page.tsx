@@ -3,50 +3,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type Chat = {
-  id: string
-  user_id: string
-  status: string
-  subject: string | null
-  last_message: string | null
-  last_message_at: string | null
-  created_at: string
-  user: {
-    email: string
-    full_name: string | null
-  }
-}
-
-type Message = {
-  id: string
-  chat_id: string
-  sender_id: string
-  sender_role: string
-  message: string
-  is_read: boolean
-  created_at: string
-}
-
 export default function AdminSupportPage() {
-  const [chats, setChats] = useState<Chat[]>([])
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [adminId, setAdminId] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  useEffect(() => { scrollToBottom() }, [messages])
+  const [chats, setChats] = useState<any[]>([])
+  const [selected, setSelected] = useState<any>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [joshuaAvatar, setJoshuaAvatar] = useState<string | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const init = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setAdminId(user.id)
+      const { data: joshuaData } = await supabase.from('users').select('avatar_url').eq('email', 'admin@capitalmarketpro.com').single()
+      if (joshuaData?.avatar_url) setJoshuaAvatar(joshuaData.avatar_url)
       fetchChats()
     }
     init()
@@ -56,13 +26,14 @@ export default function AdminSupportPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('support_chats')
-      .select('*, user:users(email, full_name)')
-      .order('last_message_at', { ascending: false })
+      .select('*, user:users(email, full_name, avatar_url)')
+      .order('updated_at', { ascending: false })
     setChats(data || [])
+    setLoading(false)
   }
 
-  const loadMessages = async (chat: Chat) => {
-    setSelectedChat(chat)
+  const openChat = async (chat: any) => {
+    setSelected(chat)
     const supabase = createClient()
     const { data } = await supabase
       .from('support_messages')
@@ -71,215 +42,143 @@ export default function AdminSupportPage() {
       .order('created_at', { ascending: true })
     setMessages(data || [])
 
-    // Mark messages as read
-    await supabase
-      .from('support_messages')
-      .update({ is_read: true })
-      .eq('chat_id', chat.id)
-      .eq('sender_role', 'user')
+    // Mark as read
+    await supabase.from('support_messages').update({ is_read: true }).eq('chat_id', chat.id).eq('sender_role', 'user')
 
-    // Subscribe to new messages
-    supabase
-      .channel(`chat:${chat.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'support_messages',
-        filter: `chat_id=eq.${chat.id}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message])
+    // Realtime
+    supabase.channel(`admin-chat-${chat.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `chat_id=eq.${chat.id}` }, (payload) => {
+        setMessages(prev => [...prev, payload.new as any])
       })
       .subscribe()
   }
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedChat) return
-    setLoading(true)
+  const sendReply = async () => {
+    if (!input.trim() || !selected) return
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
+    const msg = input.trim()
+    setInput('')
     await supabase.from('support_messages').insert({
-      chat_id: selectedChat.id,
-      sender_id: adminId,
+      chat_id: selected.id,
+      sender_id: user.id,
       sender_role: 'admin',
-      message: newMessage.trim(),
-      is_read: false,
+      message: msg,
     })
-
-    await supabase.from('support_chats').update({
-      last_message: newMessage.trim(),
-      last_message_at: new Date().toISOString(),
-    }).eq('id', selectedChat.id)
 
     // Notify user
     await supabase.from('notifications').insert({
-      user_id: selectedChat.user_id,
-      title: '💬 New message from Support',
-      message: newMessage.trim().slice(0, 100),
+      user_id: selected.user_id,
+      title: '💬 New Message from Joshua Elder',
+      message: msg.slice(0, 100) + (msg.length > 100 ? '...' : ''),
       type: 'info',
     })
 
-    setNewMessage('')
-    setLoading(false)
-    fetchChats()
+    setMessages(prev => [...prev, { id: Date.now(), sender_role: 'admin', message: msg, created_at: new Date().toISOString() }])
   }
 
-  const closeChat = async (chatId: string) => {
-    const supabase = createClient()
-    await supabase.from('support_chats').update({ status: 'closed' }).eq('id', chatId)
-    fetchChats()
-    if (selectedChat?.id === chatId) setSelectedChat(prev => prev ? { ...prev, status: 'closed' } : null)
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() }
   }
 
-  const unreadCount = (chat: Chat) => {
-    return messages.filter(m => m.chat_id === chat.id && !m.is_read && m.sender_role === 'user').length
-  }
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: '#e6edf3', marginBottom: 4 }}>Live Support</div>
-        <div style={{ fontSize: 13, color: '#484f58' }}>Respond to user support messages in real-time</div>
+    <div style={{ height: 'calc(100vh - 54px)', display: 'flex', fontFamily: 'monospace' }}>
+      {/* Chat List */}
+      <div style={{ width: 280, background: '#0d1117', borderRight: '1px solid #161b22', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid #161b22' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#e6edf3', marginBottom: 2 }}>Support Inbox</div>
+          <div style={{ fontSize: 11, color: '#484f58' }}>{chats.length} conversations</div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {loading ? (
+            <div style={{ padding: 20, textAlign: 'center', color: '#484f58', fontSize: 12 }}>Loading...</div>
+          ) : chats.length === 0 ? (
+            <div style={{ padding: 20, textAlign: 'center', color: '#484f58', fontSize: 12 }}>No chats yet</div>
+          ) : chats.map(chat => (
+            <div key={chat.id} onClick={() => openChat(chat)}
+              style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', cursor: 'pointer', background: selected?.id === chat.id ? 'rgba(201,168,76,0.08)' : 'transparent', borderLeft: selected?.id === chat.id ? '2px solid #C9A84C' : '2px solid transparent' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#060a0f', flexShrink: 0 }}>
+                  {(chat.user?.full_name || chat.user?.email || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.user?.full_name || 'Unknown'}</div>
+                  <div style={{ fontSize: 10, color: '#484f58', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.user?.email}</div>
+                </div>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: chat.status === 'open' ? '#3fb950' : '#484f58', flexShrink: 0 }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, height: 'calc(100vh - 180px)' }}>
-
-        {/* Chat List */}
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3' }}>Active Chats</div>
-            <div style={{ fontSize: 11, color: '#484f58' }}>{chats.filter(c => c.status === 'open').length} open</div>
+      {/* Chat Window */}
+      {!selected ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060a0f' }}>
+          <div style={{ textAlign: 'center', color: '#484f58' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: 14, marginBottom: 6, color: '#8b949e' }}>Select a conversation</div>
+            <div style={{ fontSize: 12 }}>Choose a chat from the left to start replying as Joshua Elder</div>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {chats.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: '#484f58', fontSize: 13 }}>No support chats yet</div>
-            ) : chats.map(chat => (
-              <div
-                key={chat.id}
-                onClick={() => loadMessages(chat)}
-                style={{
-                  padding: '14px 16px',
-                  borderBottom: '1px solid #161b22',
-                  cursor: 'pointer',
-                  background: selectedChat?.id === chat.id ? 'rgba(201,168,76,0.08)' : 'transparent',
-                  borderLeft: selectedChat?.id === chat.id ? '3px solid #C9A84C' : '3px solid transparent',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#060a0f', flexShrink: 0 }}>
-                      {(chat.user?.full_name || chat.user?.email || 'U')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3' }}>{chat.user?.full_name || 'User'}</div>
-                      <div style={{ fontSize: 10, color: '#484f58' }}>{chat.user?.email}</div>
-                    </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#060a0f' }}>
+          {/* Chat header */}
+          <div style={{ padding: '14px 20px', background: '#0d1117', borderBottom: '1px solid #161b22', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#060a0f' }}>
+              {(selected.user?.full_name || selected.user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3' }}>{selected.user?.full_name || 'Unknown User'}</div>
+              <div style={{ fontSize: 11, color: '#484f58' }}>{selected.user?.email}</div>
+            </div>
+            <div style={{ marginLeft: 'auto', fontSize: 10, color: '#3fb950', background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.2)', padding: '4px 10px', borderRadius: 20 }}>● Open</div>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {messages.map((msg, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, flexDirection: msg.sender_role === 'admin' ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: msg.sender_role === 'admin' ? 'linear-gradient(135deg, #C9A84C, #E8D08C)' : '#161b22', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#060a0f', border: `2px solid ${msg.sender_role === 'admin' ? 'rgba(201,168,76,0.3)' : '#21262d'}` }}>
+                  {msg.sender_role === 'admin' ? (joshuaAvatar ? <img src={joshuaAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE') : (selected.user?.full_name || 'U')[0].toUpperCase()}
+                </div>
+                <div style={{ maxWidth: '70%' }}>
+                  <div style={{ fontSize: 10, color: '#484f58', marginBottom: 3, textAlign: msg.sender_role === 'admin' ? 'right' : 'left' }}>
+                    {msg.sender_role === 'admin' ? 'Joshua Elder (You)' : selected.user?.full_name || 'User'} · {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <span style={{ fontSize: 9, color: chat.status === 'open' ? '#3fb950' : '#484f58', background: chat.status === 'open' ? 'rgba(63,185,80,0.15)' : 'rgba(72,79,88,0.2)', padding: '2px 6px', borderRadius: 10, textTransform: 'uppercase' }}>
-                      {chat.status}
-                    </span>
+                  <div style={{ padding: '12px 16px', borderRadius: msg.sender_role === 'admin' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.sender_role === 'admin' ? 'linear-gradient(135deg, #C9A84C, #E8D08C)' : '#161b22', color: msg.sender_role === 'admin' ? '#060a0f' : '#e6edf3', fontSize: 13, lineHeight: 1.7, border: msg.sender_role === 'admin' ? 'none' : '1px solid #21262d' }}>
+                    {msg.message}
                   </div>
                 </div>
-                {chat.last_message && (
-                  <div style={{ fontSize: 11, color: '#484f58', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {chat.last_message}
-                  </div>
-                )}
-                {chat.subject && (
-                  <div style={{ fontSize: 10, color: '#C9A84C', marginTop: 4 }}>📌 {chat.subject}</div>
-                )}
               </div>
             ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Reply box */}
+          <div style={{ padding: '12px 16px', background: '#0d1117', borderTop: '1px solid #161b22', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#060a0f', flexShrink: 0 }}>
+              {joshuaAvatar ? <img src={joshuaAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+            </div>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Reply as Joshua Elder..."
+              style={{ flex: 1, background: '#161b22', border: '1px solid #21262d', borderRadius: 12, padding: '11px 14px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
+              onFocus={e => e.target.style.borderColor = '#C9A84C'}
+              onBlur={e => e.target.style.borderColor = '#21262d'}
+            />
+            <button onClick={sendReply} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>➤</button>
           </div>
         </div>
-
-        {/* Chat Window */}
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {!selectedChat ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontSize: 40 }}>💬</div>
-              <div style={{ fontSize: 14, color: '#484f58' }}>Select a chat to start responding</div>
-            </div>
-          ) : (
-            <>
-              {/* Chat Header */}
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #161b22', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#060a0f' }}>
-                    {(selectedChat.user?.full_name || selectedChat.user?.email || 'U')[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>{selectedChat.user?.full_name || 'User'}</div>
-                    <div style={{ fontSize: 11, color: '#484f58' }}>{selectedChat.user?.email}</div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {selectedChat.status === 'open' && (
-                    <button
-                      onClick={() => closeChat(selectedChat.id)}
-                      style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 11, cursor: 'pointer' }}
-                    >
-                      Close Chat
-                    </button>
-                  )}
-                  <span style={{ fontSize: 10, color: selectedChat.status === 'open' ? '#3fb950' : '#484f58', background: selectedChat.status === 'open' ? 'rgba(63,185,80,0.15)' : 'rgba(72,79,88,0.2)', padding: '6px 10px', borderRadius: 8, textTransform: 'uppercase' }}>
-                    {selectedChat.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {messages.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#484f58', fontSize: 13, marginTop: 40 }}>No messages yet</div>
-                ) : messages.map((msg) => {
-                  const isAdmin = msg.sender_role === 'admin'
-                  return (
-                    <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                      <div style={{
-                        maxWidth: '70%',
-                        background: isAdmin ? 'linear-gradient(135deg, #C9A84C, #E8D08C)' : '#161b22',
-                        borderRadius: isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                        padding: '10px 14px',
-                      }}>
-                        <div style={{ fontSize: 13, color: isAdmin ? '#060a0f' : '#e6edf3', lineHeight: 1.5 }}>{msg.message}</div>
-                        <div style={{ fontSize: 9, color: isAdmin ? 'rgba(6,10,15,0.6)' : '#484f58', marginTop: 4, textAlign: 'right' }}>
-                          {isAdmin ? '👤 Admin · ' : ''}{new Date(msg.created_at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input */}
-              <div style={{ padding: '14px 20px', borderTop: '1px solid #161b22' }}>
-                {selectedChat.status === 'closed' ? (
-                  <div style={{ textAlign: 'center', fontSize: 12, color: '#484f58', padding: '10px 0' }}>This chat is closed</div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                      placeholder="Type your response..."
-                      style={{ flex: 1, background: '#161b22', border: '1px solid #30363d', borderRadius: 10, padding: '12px 16px', color: '#e6edf3', fontSize: 13, outline: 'none' }}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={loading || !newMessage.trim()}
-                      style={{ padding: '12px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: loading || !newMessage.trim() ? 0.5 : 1 }}
-                    >
-                      Send →
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

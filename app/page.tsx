@@ -3,493 +3,218 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
-const POPUP_EVENTS = [
-  // Deposits
+const WITHDRAWALS = [
   { type: 'deposit', name: 'James O.', country: 'United States 🇺🇸', amount: '$12,500' },
-  { type: 'deposit', name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$8,200' },
+  { type: 'withdrawal', name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$28,750' },
   { type: 'deposit', name: 'Carlos R.', country: 'Canada 🇨🇦', amount: '$25,000' },
-  { type: 'deposit', name: 'Amina K.', country: 'Nigeria 🇳🇬', amount: '$5,500' },
-  { type: 'deposit', name: 'David L.', country: 'Australia 🇦🇺', amount: '$18,750' },
-  { type: 'deposit', name: 'Fatima A.', country: 'UAE 🇦🇪', amount: '$50,000' },
-  { type: 'deposit', name: 'Michael T.', country: 'Germany 🇩🇪', amount: '$9,800' },
-  { type: 'deposit', name: 'Priya S.', country: 'Singapore 🇸🇬', amount: '$33,000' },
-  // Withdrawals
-  { type: 'withdrawal', name: 'Ahmed H.', country: 'Saudi Arabia 🇸🇦', amount: '$62,400' },
-  { type: 'withdrawal', name: 'Emma W.', country: 'France 🇫🇷', amount: '$28,750' },
-  { type: 'withdrawal', name: 'Marcus J.', country: 'United States 🇺🇸', amount: '$41,300' },
-  { type: 'withdrawal', name: 'Chioma E.', country: 'Nigeria 🇳🇬', amount: '$15,200' },
-  { type: 'withdrawal', name: 'Yuki T.', country: 'Japan 🇯🇵', amount: '$38,000' },
-  { type: 'withdrawal', name: 'Lisa C.', country: 'Netherlands 🇳🇱', amount: '$54,900' },
-  { type: 'withdrawal', name: 'James O.', country: 'United States 🇺🇸', amount: '$87,500' },
-  { type: 'withdrawal', name: 'Sarah M.', country: 'United Kingdom 🇬🇧', amount: '$23,600' },
-  { type: 'deposit', name: 'Omar K.', country: 'Kuwait 🇰🇼', amount: '$100,000' },
-  { type: 'withdrawal', name: 'Sofia R.', country: 'Brazil 🇧🇷', amount: '$19,400' },
-  { type: 'deposit', name: 'Chen W.', country: 'Hong Kong 🇭🇰', amount: '$75,000' },
   { type: 'withdrawal', name: 'Amina K.', country: 'Nigeria 🇳🇬', amount: '$31,800' },
+  { type: 'deposit', name: 'David L.', country: 'Australia 🇦🇺', amount: '$18,750' },
+  { type: 'withdrawal', name: 'Fatima A.', country: 'UAE 🇦🇪', amount: '$62,400' },
+  { type: 'deposit', name: 'Michael T.', country: 'Germany 🇩🇪', amount: '$9,800' },
+  { type: 'withdrawal', name: 'Priya S.', country: 'Singapore 🇸🇬', amount: '$44,200' },
+  { type: 'deposit', name: 'Ahmed H.', country: 'Saudi Arabia 🇸🇦', amount: '$100,000' },
+  { type: 'withdrawal', name: 'Emma W.', country: 'France 🇫🇷', amount: '$28,750' },
+  { type: 'deposit', name: 'Marcus J.', country: 'United States 🇺🇸', amount: '$41,300' },
+  { type: 'withdrawal', name: 'Chioma E.', country: 'Nigeria 🇳🇬', amount: '$15,200' },
+  { type: 'deposit', name: 'Omar K.', country: 'Kuwait 🇰🇼', amount: '$75,000' },
+  { type: 'withdrawal', name: 'Yuki T.', country: 'Japan 🇯🇵', amount: '$38,000' },
 ]
 
 function WithdrawalPopup() {
-  const [item, setItem] = useState<typeof POPUP_EVENTS[0] | null>(null)
+  const [item, setItem] = useState<typeof WITHDRAWALS[0] | null>(null)
   const timer = useRef<any>(null)
 
   useEffect(() => {
     const cycle = () => {
-      setItem(POPUP_EVENTS[Math.floor(Math.random() * POPUP_EVENTS.length)])
+      setItem(WITHDRAWALS[Math.floor(Math.random() * WITHDRAWALS.length)])
       timer.current = setTimeout(() => {
         setItem(null)
-        timer.current = setTimeout(cycle, 6000 + Math.random() * 5000)
+        timer.current = setTimeout(cycle, 7000 + Math.random() * 5000)
       }, 5000)
     }
-    timer.current = setTimeout(cycle, 3000)
+    timer.current = setTimeout(cycle, 3500)
     return () => clearTimeout(timer.current)
   }, [])
 
   if (!item) return null
-
   const isDeposit = item.type === 'deposit'
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 20, left: 20, zIndex: 99999,
-      maxWidth: 290, fontFamily: 'monospace',
-      animation: 'wpSlide 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards',
-    }}>
-      <div style={{
-        background: '#0d1117',
-        border: `2px solid ${isDeposit ? '#0052FF' : '#C9A84C'}`,
-        borderRadius: 14, padding: '12px 38px 12px 12px',
-        display: 'flex', alignItems: 'center', gap: 10,
-        boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
-        position: 'relative',
-      }}>
-        <div style={{ fontSize: 26, flexShrink: 0 }}>{isDeposit ? '💰' : '💸'}</div>
+    <div style={{ position: 'fixed', bottom: 20, left: 20, zIndex: 99999, maxWidth: 290, fontFamily: 'monospace', animation: 'wpSlide 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' }}>
+      <div style={{ background: '#0d1117', border: `2px solid ${isDeposit ? '#0052FF' : '#C9A84C'}`, borderRadius: 14, padding: '12px 36px 12px 12px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', position: 'relative' }}>
+        <div style={{ fontSize: 24, flexShrink: 0 }}>{isDeposit ? '💰' : '💸'}</div>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', marginBottom: 1 }}>{item.name}</div>
           <div style={{ fontSize: 10, color: '#8b949e', marginBottom: 3 }}>{item.country}</div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: isDeposit ? '#0052FF' : '#3fb950' }}>
-            {isDeposit ? 'Deposited' : 'Withdrew'} {item.amount} {isDeposit ? '📥' : '✅'}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: isDeposit ? '#0052FF' : '#3fb950' }}>{isDeposit ? 'Deposited' : 'Withdrew'} {item.amount} {isDeposit ? '📥' : '✅'}</div>
         </div>
-        <button onClick={() => setItem(null)} style={{ position: 'absolute', top: 8, right: 10, background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 14 }}>✕</button>
+        <button onClick={() => setItem(null)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: 12 }}>✕</button>
       </div>
-      <div style={{ textAlign: 'center', marginTop: 4, fontSize: 9, color: '#484f58', letterSpacing: '0.1em' }}>
-        VERIFIED · CAPITALMARKET PRO · AUTOMATED
-      </div>
+      <div style={{ textAlign: 'center', marginTop: 4, fontSize: 9, color: '#484f58', letterSpacing: '0.1em' }}>VERIFIED · CAPITALMARKET PRO · AUTOMATED</div>
     </div>
   )
 }
 
-// ── DATA ──
-const FEATURES = [
-  { icon: '₿', title: 'Crypto Trading', desc: 'Trade Bitcoin, Ethereum, Solana and 100+ cryptocurrencies with real-time data.', color: '#F7A600' },
-  { icon: '📈', title: 'Stock Brokerage', desc: 'Access global stock markets. Trade Apple, Tesla, NVIDIA and thousands of stocks.', color: '#00B386' },
-  { icon: '🔗', title: 'Affiliate Earnings', desc: 'Earn passive income through our program. Track clicks, conversions and payouts.', color: '#FF9900' },
-  { icon: '⚡', title: 'Trading Signals', desc: 'Professional buy/sell signals with 84% accuracy for crypto and stocks.', color: '#7B2BF9' },
-  { icon: '🔒', title: 'Bank-Level Security', desc: '256-bit SSL, 2FA authentication and cold storage for maximum protection.', color: '#C9A84C' },
-  { icon: '📊', title: 'Unified Dashboard', desc: 'All your investments in one place. Track P&L, portfolio and performance.', color: '#0052FF' },
-]
-
-const STATS = [
-  { value: '$2.4B+', label: 'Total Volume Traded' },
-  { value: '150K+', label: 'Active Traders' },
-  { value: '99.9%', label: 'Uptime Guaranteed' },
-  { value: '24/7', label: 'Live Support' },
-]
-
-const PLANS = [
-  { name: 'Basic', price: '$29', color: '#8b949e', signals: '5', features: ['5 signals/day', 'Crypto only', 'Email alerts', 'Basic analysis'] },
-  { name: 'Pro', price: '$79', color: '#0052FF', signals: '15', popular: true, features: ['15 signals/day', 'Crypto + Stocks', 'Push + Email', 'Risk management', 'Detailed analysis'] },
-  { name: 'Elite', price: '$149', color: '#C9A84C', signals: '30', features: ['30 signals/day', 'Crypto + Stocks', 'Priority alerts', 'Advanced analysis', 'Weekly outlook', 'Risk system'] },
-  { name: 'VIP', price: '$299', color: '#7B2BF9', signals: '∞', features: ['Unlimited signals', 'All markets', '24/7 Priority', 'Pro analysis', 'Daily outlook', '1-on-1 calls', 'VIP support'] },
-]
-{/* ── TEAM / EXPERTS ── */}
-<section style={{ padding: '70px 20px', borderTop: '1px solid #161b22' }}>
-  <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-    <div style={{ textAlign: 'center', marginBottom: 50 }}>
-      <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Our Expert Team</div>
-      <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>
-        World-Class Trading Professionals
-      </h2>
-      <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 520, margin: '0 auto' }}>
-        Our team of certified analysts, traders and portfolio managers brings decades of combined experience across global markets.
-      </p>
-    </div>
-
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-      {[
-        {
-          name: 'Joshua C. Elder',
-          role: 'General Manager',
-          dept: 'Platform Leadership',
-          color: '#C9A84C',
-          bg: 'rgba(201,168,76,0.08)',
-          border: 'rgba(201,168,76,0.25)',
-          initials: 'JE',
-          badge: '👑',
-          stats: [{ v: '14yr', l: 'Experience' }, { v: '$2.4B+', l: 'Managed' }],
-          desc: 'Former Goldman Sachs VP with expertise in algorithmic trading and portfolio management.',
-          verified: true,
-        },
-        {
-          name: 'Michael Saylor',
-          role: 'Chief Crypto Analyst',
-          dept: 'Cryptocurrency Markets',
-          color: '#F7A600',
-          bg: 'rgba(247,166,0,0.08)',
-          border: 'rgba(247,166,0,0.25)',
-          initials: 'MS',
-          badge: '₿',
-          stats: [{ v: '11yr', l: 'Crypto' }, { v: '84%', l: 'Accuracy' }],
-          desc: 'Pioneer Bitcoin strategist managing over $800M in digital assets across 40+ portfolios.',
-          verified: true,
-        },
-        {
-          name: 'Sarah K. Williams',
-          role: 'Head of Stock Trading',
-          dept: 'Equity Markets',
-          color: '#3fb950',
-          bg: 'rgba(63,185,80,0.08)',
-          border: 'rgba(63,185,80,0.25)',
-          initials: 'SW',
-          badge: '📈',
-          stats: [{ v: '9yr', l: 'Stocks' }, { v: '91%', l: 'Win Rate' }],
-          desc: 'Ex-Morgan Stanley equity analyst specializing in tech and growth stocks.',
-          verified: true,
-        },
-        {
-          name: 'David A. Thompson',
-          role: 'Affiliate Director',
-          dept: 'Partner Relations',
-          color: '#7B2BF9',
-          bg: 'rgba(123,43,249,0.08)',
-          border: 'rgba(123,43,249,0.25)',
-          initials: 'DT',
-          badge: '🔗',
-          stats: [{ v: '150K+', l: 'Partners' }, { v: '$12M+', l: 'Paid Out' }],
-          desc: 'Built and scaled affiliate networks across 60+ countries with proven ROI systems.',
-          verified: true,
-        },
-        {
-          name: 'Rachel M. Chen',
-          role: 'Senior Market Analyst',
-          dept: 'Technical Analysis',
-          color: '#0052FF',
-          bg: 'rgba(0,82,255,0.08)',
-          border: 'rgba(0,82,255,0.25)',
-          initials: 'RC',
-          badge: '📊',
-          stats: [{ v: '8yr', l: 'Analysis' }, { v: '5000+', l: 'Reports' }],
-          desc: 'CMT-certified technical analyst covering crypto and equity markets daily.',
-          verified: true,
-        },
-        {
-          name: 'Omar Al-Rashid',
-          role: 'Risk Manager',
-          dept: 'Risk & Compliance',
-          color: '#f85149',
-          bg: 'rgba(248,81,73,0.08)',
-          border: 'rgba(248,81,73,0.25)',
-          initials: 'OA',
-          badge: '🛡',
-          stats: [{ v: '12yr', l: 'Risk Mgmt' }, { v: '0%', l: 'Loss Rate' }],
-          desc: 'Former hedge fund risk officer ensuring maximum protection for all client funds.',
-          verified: true,
-        },
-        {
-          name: 'Priya S. Patel',
-          role: 'Signal Strategist',
-          dept: 'AI Trading Signals',
-          color: '#00B386',
-          bg: 'rgba(0,179,134,0.08)',
-          border: 'rgba(0,179,134,0.25)',
-          initials: 'PP',
-          badge: '⚡',
-          stats: [{ v: '84%', l: 'Signal Win' }, { v: '200+', l: 'Daily Signals' }],
-          desc: 'Quant researcher who built our AI signal engine using ML models trained on 15 years of data.',
-          verified: true,
-        },
-        {
-          name: 'James O. Foster',
-          role: 'Platform Admin',
-          dept: 'Operations & Security',
-          color: '#8b949e',
-          bg: 'rgba(139,148,158,0.08)',
-          border: 'rgba(139,148,158,0.25)',
-          initials: 'JF',
-          badge: '🔒',
-          stats: [{ v: '99.9%', l: 'Uptime' }, { v: '24/7', l: 'Monitoring' }],
-          desc: 'Cybersecurity expert ensuring platform integrity and 100% fund security.',
-          verified: true,
-        },
-      ].map(member => (
-        <div key={member.name} style={{ background: member.bg, border: `1px solid ${member.border}`, borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
-          {/* Glow */}
-          <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `${member.color}08` }} />
-
-          {/* Avatar */}
-          <div style={{ position: 'relative', marginBottom: 14 }}>
-            <div style={{ width: 60, height: 60, borderRadius: '50%', background: `linear-gradient(135deg, ${member.color}, ${member.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#060a0f', border: `3px solid ${member.color}44` }}>
-              {member.initials}
-            </div>
-            {member.verified && (
-              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, border: '2px solid #060a0f' }}>✓</div>
-            )}
-          </div>
-
-          {/* Name & Role */}
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#e6edf3' }}>{member.name}</div>
-              <span style={{ fontSize: 12 }}>{member.badge}</span>
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: member.color, marginBottom: 2 }}>{member.role}</div>
-            <div style={{ fontSize: 10, color: '#484f58', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{member.dept}</div>
-          </div>
-
-          {/* Description */}
-          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7, marginBottom: 14 }}>{member.desc}</div>
-
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {member.stats.map(s => (
-              <div key={s.l} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '7px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: member.color }}>{s.v}</div>
-                <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Certifications row */}
-    <div style={{ marginTop: 32, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-      {['🏛 SEC Registered', '📜 CFA Certified', '🛡 FINRA Compliant', '🌍 FCA Authorized', '⚖️ AML Certified'].map(c => (
-        <div key={c} style={{ fontSize: 11, color: '#8b949e', background: '#0d1117', border: '1px solid #161b22', padding: '6px 14px', borderRadius: 20 }}>{c}</div>
-      ))}
-    </div>
-  </div>
-</section>
-{/* ── TEAM ── */}
-<section style={{ padding: '70px 20px', borderTop: '1px solid #161b22' }}>
-  <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-    <div style={{ textAlign: 'center', marginBottom: 48 }}>
-      <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Leadership Team</div>
-      <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>
-        World-Class Financial Professionals
-      </h2>
-      <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 500, margin: '0 auto' }}>
-        Our leadership team brings decades of combined experience from the world's top financial institutions.
-      </p>
-    </div>
-
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-      {[
-        {
-          initials: 'JE', name: 'Joshua C. Elder', role: 'Account Manager',
-          dept: 'Client Portfolio Management', color: '#C9A84C',
-          badge: '👑', exp: '14yr', rate: '$2.4B+',
-          bg: 'linear-gradient(135deg, #C9A84C22, #C9A84C08)',
-          desc: 'Former Goldman Sachs VP. CFA-certified portfolio manager specializing in crypto and equity markets.',
-          tags: ['CFA', 'Goldman Sachs', 'SEC Reg.'],
-        },
-        {
-          initials: 'RK', name: 'Robert K. Hayes', role: 'Chief Executive Officer',
-          dept: 'Executive Leadership', color: '#0052FF',
-          badge: '🏛', exp: '18yr', rate: '150K+',
-          bg: 'linear-gradient(135deg, #0052FF22, #0052FF08)',
-          desc: 'Ex-BlackRock Managing Director with 18 years leading global investment platforms.',
-          tags: ['BlackRock', 'Harvard MBA', 'CFA'],
-        },
-        {
-          initials: 'SC', name: 'Sophia C. Laurent', role: 'Chief Crypto Strategist',
-          dept: 'Digital Asset Markets', color: '#F7A600',
-          badge: '₿', exp: '11yr', rate: '84%',
-          bg: 'linear-gradient(135deg, #F7A60022, #F7A60008)',
-          desc: 'Pioneer Bitcoin strategist. Built trading algorithms managing $800M+ in digital assets.',
-          tags: ['MIT Alumni', 'CMT', 'DeFi Expert'],
-        },
-        {
-          initials: 'MO', name: 'Marcus O. Sterling', role: 'Head of Stock Trading',
-          dept: 'Equity & ETF Markets', color: '#3fb950',
-          badge: '📈', exp: '9yr', rate: '91%',
-          bg: 'linear-gradient(135deg, #3fb95022, #3fb95008)',
-          desc: 'Former Morgan Stanley equity analyst. Specializes in high-growth tech and emerging markets.',
-          tags: ['Morgan Stanley', 'CFA', 'CMT'],
-        },
-        {
-          initials: 'AL', name: 'Amanda L. Brooks', role: 'Affiliate Director',
-          dept: 'Partner & Growth', color: '#7B2BF9',
-          badge: '🔗', exp: '8yr', rate: '60+ ctrs',
-          bg: 'linear-gradient(135deg, #7B2BF922, #7B2BF908)',
-          desc: 'Built and scaled global affiliate networks generating $12M+ in partner payouts annually.',
-          tags: ['Growth Expert', 'Wharton MBA'],
-        },
-        {
-          initials: 'DR', name: 'Daniel R. Okonkwo', role: 'Risk & Compliance Officer',
-          dept: 'Risk Management', color: '#f85149',
-          badge: '🛡', exp: '12yr', rate: '0% Loss',
-          bg: 'linear-gradient(135deg, #f8514922, #f8514908)',
-          desc: 'Former hedge fund risk officer. Ensures 100% client fund protection and regulatory compliance.',
-          tags: ['FRM', 'FINRA', 'AML Cert.'],
-        },
-        {
-          initials: 'PP', name: 'Priya P. Sharma', role: 'Head of AI Signals',
-          dept: 'Algorithmic Trading', color: '#00B386',
-          badge: '⚡', exp: '7yr', rate: '84% acc.',
-          bg: 'linear-gradient(135deg, #00B38622, #00B38608)',
-          desc: 'Quant researcher who architected our AI signal engine using ML models trained on 15+ years of data.',
-          tags: ['MIT PhD', 'ML Expert', 'Quant'],
-        },
-        {
-          initials: 'JF', name: 'James F. Whitmore', role: 'Platform Administrator',
-          dept: 'Security & Infrastructure', color: '#8b949e',
-          badge: '🔒', exp: '10yr', rate: '99.9%',
-          bg: 'linear-gradient(135deg, #8b949e22, #8b949e08)',
-          desc: 'Cybersecurity veteran ensuring platform integrity, 24/7 uptime, and maximum security for all funds.',
-          tags: ['CISSP', 'AWS Expert', 'SOC2'],
-        },
-      ].map(member => (
-        <div key={member.name} style={{ background: member.bg, border: `1px solid ${member.color}33`, borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -15, right: -15, width: 70, height: 70, borderRadius: '50%', background: `${member.color}06` }} />
-
-          {/* Avatar */}
-          <div style={{ position: 'relative', marginBottom: 14 }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${member.color}, ${member.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f', border: `3px solid ${member.color}44` }}>
-              {member.initials}
-            </div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 18, height: 18, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, border: '2px solid #060a0f' }}>✓</div>
-          </div>
-
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#e6edf3' }}>{member.name}</div>
-              <span style={{ fontSize: 10 }}>{member.badge}</span>
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: member.color, marginBottom: 1 }}>{member.role}</div>
-            <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{member.dept}</div>
-          </div>
-
-          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7, marginBottom: 12 }}>{member.desc}</div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
-            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: member.color }}>{member.exp}</div>
-              <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase' }}>Experience</div>
-            </div>
-            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: member.color }}>{member.rate}</div>
-              <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase' }}>Track Record</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {member.tags.map(tag => (
-              <div key={tag} style={{ fontSize: 9, color: member.color, background: `${member.color}12`, border: `1px solid ${member.color}22`, padding: '2px 7px', borderRadius: 4 }}>{tag}</div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Certifications */}
-    <div style={{ marginTop: 28, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-      {['🏛 SEC Registered', '📜 CFA Institute', '🛡 FINRA Compliant', '🌍 FCA Authorized', '⚖️ AML Certified', '💎 SOC 2 Type II'].map(c => (
-        <div key={c} style={{ fontSize: 11, color: '#8b949e', background: '#0d1117', border: '1px solid #161b22', padding: '6px 14px', borderRadius: 20 }}>{c}</div>
-      ))}
-    </div>
-  </div>
-</section>
-
-const TESTIMONIALS = [
-  { name: 'Michael R.', role: 'Professional Trader', text: 'CapitalMarket Pro changed how I manage my portfolio. Having crypto, stocks and affiliate income in one dashboard is a game changer.', avatar: 'M' },
-  { name: 'Sarah K.', role: 'Crypto Investor', text: 'The platform is incredibly professional. Deposits are fast, charts are clean and the support team is always responsive.', avatar: 'S' },
-  { name: 'James T.', role: 'Stock Trader', text: 'The trading signals alone are worth every penny. 84% accuracy rate has completely transformed my results.', avatar: 'J' },
-]
-
-const FAQS = [
-  { q: 'How do I fund my account?', a: 'We accept Bitcoin deposits for fast and secure funding. Click Deposit, choose MoonPay, Binance or Paybis, then send BTC to your unique deposit address.' },
-  { q: 'How long do withdrawals take?', a: 'Withdrawals are reviewed within 24-48 hours. Once approved, funds are sent directly to your crypto wallet.' },
-  { q: 'Is my money safe?', a: 'Yes. We use 256-bit SSL encryption, two-factor authentication, and cold storage to protect all user funds.' },
-  { q: 'What can I trade?', a: 'Cryptocurrencies (BTC, ETH, SOL, BNB+), global stocks (US, EU markets), and earn through our affiliate program.' },
-  { q: 'What are the signal plans?', a: 'Basic ($29/mo), Pro ($79/mo), Elite ($149/mo) and VIP ($299/mo). Each includes different signal volumes and features.' },
-  { q: 'How do I start?', a: 'Create a free account, complete KYC verification, deposit via Bitcoin, and start trading immediately.' },
-]
-
 const TICKER = [
   { s: 'BTC/USD', p: '$67,240', c: '+2.4%', u: true },
   { s: 'ETH/USD', p: '$3,480', c: '+1.8%', u: true },
-  { s: 'SOL/USD', p: '$142.30', c: '+5.2%', u: true },
-  { s: 'BNB/USD', p: '$412.80', c: '-0.8%', u: false },
-  { s: 'AAPL', p: '$189.30', c: '-0.6%', u: false },
-  { s: 'NVDA', p: '$875.40', c: '+3.2%', u: true },
-  { s: 'MSFT', p: '$415.20', c: '+1.1%', u: true },
-  { s: 'TSLA', p: '$248.60', c: '-1.4%', u: false },
-  { s: 'XRP/USD', p: '$0.624', c: '+4.1%', u: true },
-  { s: 'ADA/USD', p: '$0.482', c: '+2.8%', u: true },
+  { s: 'SOL/USD', p: '$142', c: '+5.2%', u: true },
+  { s: 'BNB/USD', p: '$412', c: '-0.8%', u: false },
+  { s: 'AAPL', p: '$189', c: '-0.6%', u: false },
+  { s: 'NVDA', p: '$875', c: '+3.2%', u: true },
+  { s: 'MSFT', p: '$415', c: '+1.1%', u: true },
+  { s: 'TSLA', p: '$248', c: '-1.4%', u: false },
+  { s: 'XRP/USD', p: '$0.62', c: '+4.1%', u: true },
+  { s: 'ADA/USD', p: '$0.48', c: '+2.8%', u: true },
+]
+
+const FEATURES = [
+  { icon: '₿', title: 'Crypto Trading', desc: 'Trade Bitcoin, Ethereum, Solana and 100+ cryptocurrencies with real-time market data and AI-powered analysis.', color: '#F7A600' },
+  { icon: '📈', title: 'Stock Brokerage', desc: 'Access global equity markets. Trade Apple, Tesla, NVIDIA and thousands of stocks and ETFs with zero complexity.', color: '#3fb950' },
+  { icon: '🤖', title: 'AI Auto-Trading', desc: 'Our proprietary AI algorithm trades 24/7 across all markets — generating consistent daily returns with zero manual effort.', color: '#7B2BF9' },
+  { icon: '⚡', title: 'Trading Signals', desc: 'Professional algorithmic buy/sell signals with 84% historical accuracy. Never miss a profitable trade again.', color: '#C9A84C' },
+  { icon: '🔗', title: 'Affiliate Earnings', desc: 'Earn passive income by referring friends. Track conversions, clicks and commission payouts in real-time.', color: '#FF9900' },
+  { icon: '🔒', title: 'Bank-Level Security', desc: '256-bit SSL encryption, 2FA, and cold storage for all funds. Your money is protected by military-grade security.', color: '#0052FF' },
+]
+
+const TOP_INVESTORS = [
+  { initials: 'AM', name: 'Alexander M.', country: '🇺🇸 United States', profit: '+$284,500', roi: '+284%', plan: 'Black Plan', months: '8 months', color: '#C9A84C' },
+  { initials: 'FK', name: 'Fatima K.', country: '🇦🇪 UAE', profit: '+$156,200', roi: '+156%', plan: 'Elite Plan', months: '6 months', color: '#7B2BF9' },
+  { initials: 'JO', name: 'James O.', country: '🇬🇧 United Kingdom', profit: '+$98,400', roi: '+98%', plan: 'Platinum Plan', months: '5 months', color: '#0052FF' },
+  { initials: 'PN', name: 'Priya N.', country: '🇸🇬 Singapore', profit: '+$72,100', roi: '+72%', plan: 'Gold Plan', months: '4 months', color: '#3fb950' },
+  { initials: 'OR', name: 'Omar R.', country: '🇸🇦 Saudi Arabia', profit: '+$445,000', roi: '+445%', plan: 'Black Plan', months: '11 months', color: '#C9A84C' },
+  { initials: 'SC', name: 'Sophie C.', country: '🇫🇷 France', profit: '+$61,800', roi: '+61%', plan: 'Gold Plan', months: '3 months', color: '#F7A600' },
+]
+
+const TEAM = [
+  { initials: 'RK', name: 'Robert K. Hayes', role: 'Chief Executive Officer', dept: 'Executive Leadership', color: '#0052FF', badge: '🏛', exp: '18yr', track: '150K+', desc: 'Ex-BlackRock Managing Director. 18 years leading global investment platforms across 40+ countries.', tags: ['BlackRock Alumni', 'Harvard MBA', 'CFA'] },
+  { initials: 'JE', name: 'Joshua C. Elder', role: 'Account Manager', dept: 'Client Portfolio Management', color: '#C9A84C', badge: '👑', exp: '14yr', track: '$2.4B+', desc: 'Former Goldman Sachs VP. CFA-certified strategist overseeing all client investment plans.', tags: ['Goldman Sachs', 'CFA', 'SEC Reg.'] },
+  { initials: 'SC', name: 'Sophia C. Laurent', role: 'Chief Crypto Strategist', dept: 'Digital Asset Markets', color: '#F7A600', badge: '₿', exp: '11yr', track: '84% acc.', desc: 'Pioneer Bitcoin strategist. Built trading algorithms managing $800M+ in digital assets.', tags: ['MIT Alumni', 'CMT', 'DeFi Expert'] },
+  { initials: 'MO', name: 'Marcus O. Sterling', role: 'Head of Stock Trading', dept: 'Equity & ETF Markets', color: '#3fb950', badge: '📈', exp: '9yr', track: '91% win', desc: 'Former Morgan Stanley equity analyst specializing in high-growth tech and emerging markets.', tags: ['Morgan Stanley', 'CFA', 'CMT'] },
+  { initials: 'AL', name: 'Amanda L. Brooks', role: 'Affiliate Director', dept: 'Partner & Growth', color: '#7B2BF9', badge: '🔗', exp: '8yr', track: '$12M+ paid', desc: 'Built and scaled global affiliate networks generating $12M+ in partner payouts annually.', tags: ['Wharton MBA', 'Growth Expert'] },
+  { initials: 'PP', name: 'Priya P. Sharma', role: 'Head of AI Signals', dept: 'Algorithmic Trading', color: '#00B386', badge: '⚡', exp: '7yr', track: '84% signals', desc: 'Quant researcher who built our AI signal engine using ML trained on 15+ years of market data.', tags: ['MIT PhD', 'ML Expert', 'Quant'] },
+  { initials: 'DR', name: 'Daniel R. Okonkwo', role: 'Risk & Compliance', dept: 'Risk Management', color: '#f85149', badge: '🛡', exp: '12yr', track: '0% loss', desc: 'Former hedge fund risk officer ensuring 100% client fund protection and regulatory compliance.', tags: ['FRM', 'FINRA', 'AML Cert.'] },
+  { initials: 'JF', name: 'James F. Whitmore', role: 'Platform Administrator', dept: 'Security & Infrastructure', color: '#8b949e', badge: '🔒', exp: '10yr', track: '99.9% uptime', desc: 'Cybersecurity veteran ensuring platform integrity, 24/7 uptime, and maximum fund security.', tags: ['CISSP', 'AWS', 'SOC2'] },
+]
+
+const SERVICES = [
+  { icon: '🤖', title: 'Automated Investment', desc: 'Set your plan and let our AI do the rest. Daily returns credited automatically — no trading experience required.', color: '#C9A84C' },
+  { icon: '📊', title: 'Portfolio Management', desc: 'Real-time portfolio tracking across crypto, stocks, and affiliate income — all in one unified dashboard.', color: '#0052FF' },
+  { icon: '💳', title: 'CapitalMarket Pro Card', desc: 'Spend your trading profits anywhere in the world with our VISA-powered virtual and physical cards.', color: '#7B2BF9' },
+  { icon: '🔔', title: 'Smart Alerts', desc: 'Never miss a trade. Get instant push notifications and email alerts for every market opportunity.', color: '#3fb950' },
+]
+
+const FAQS = [
+  { q: 'How does the automated trading system work?', a: 'Our AI algorithm analyzes millions of data points per second across crypto and stock markets. It executes trades automatically 24/7, applying hedging strategies and arbitrage opportunities to generate consistent daily returns. You simply deposit, choose a plan, and earn.' },
+  { q: 'How do I fund my account?', a: 'We accept Bitcoin deposits via trusted providers including MoonPay, Binance, Coinbase, Paybis and more. Minimum deposit is $100. Processing takes under 30 minutes after 1 blockchain confirmation.' },
+  { q: 'How long do withdrawals take?', a: 'Withdrawals are reviewed by our compliance team within 24-48 hours. Once approved, funds are sent directly to your Bitcoin wallet. A 5% processing fee applies (minimum $100).' },
+  { q: 'Is my money safe?', a: 'Yes. We use 256-bit SSL encryption, two-factor authentication, and 95% cold storage for all funds. Our platform has never experienced a security breach since inception.' },
+  { q: 'What investment plans are available?', a: 'We offer 6 plans from Starter ($200 min, 5%/day for 7 days) to Black ($100k min, 25%/day for 30 days). All plans include auto-compounding and are fully managed by our AI trading system.' },
+  { q: 'Can I trade manually?', a: 'Yes! Our Manual Trading feature allows you to trade crypto markets with up to 100x leverage. Fund your trading account via Bitcoin or Apple Pay (min $500) and start trading with full control.' },
 ]
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [email, setEmail] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
+  const [email, setEmail] = useState('')
+  const [activeNews, setActiveNews] = useState(0)
+
+  const NEWS = [
+    { tag: 'MARKET UPDATE', title: 'Bitcoin surges past $67K as institutional demand continues to grow', time: '2 hours ago', icon: '₿' },
+    { tag: 'PLATFORM NEWS', title: 'CapitalMarket Pro processes $50M in withdrawals this week — fastest yet', time: '4 hours ago', icon: '🏆' },
+    { tag: 'CRYPTO', title: 'Ethereum upgrade boosts network capacity by 300% — ETH up 12%', time: '6 hours ago', icon: 'Ξ' },
+    { tag: 'STOCKS', title: 'NVIDIA hits new all-time high as AI chip demand remains insatiable', time: '8 hours ago', icon: '📈' },
+  ]
 
   return (
     <div style={{ fontFamily: 'monospace', background: '#060a0f', color: '#e6edf3', minHeight: '100vh', overflowX: 'hidden' }}>
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes wpSlide { from { transform: translateX(-110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-link { font-size: 13px; color: #8b949e; text-decoration: none; transition: color 0.15s; }
+        .nav-link:hover { color: #C9A84C; }
+        .team-card:hover { transform: translateY(-4px); transition: transform 0.2s ease; }
+        .investor-card:hover { border-color: rgba(201,168,76,0.4) !important; }
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .mobile-hamburger { display: flex !important; }
+          .hero-title { font-size: clamp(28px, 8vw, 52px) !important; }
+          .features-grid { grid-template-columns: 1fr !important; }
+          .team-grid { grid-template-columns: 1fr 1fr !important; }
+          .investors-grid { grid-template-columns: 1fr 1fr !important; }
+          .services-grid { grid-template-columns: 1fr 1fr !important; }
+          .footer-grid { grid-template-columns: 1fr 1fr !important; }
+          .stats-grid { grid-template-columns: 1fr 1fr !important; }
+          .two-col { grid-template-columns: 1fr !important; }
+          .hide-mobile { display: none !important; }
+          .nav-btns .signup-btn { display: none !important; }
+        }
+        @media (max-width: 480px) {
+          .team-grid { grid-template-columns: 1fr !important; }
+          .investors-grid { grid-template-columns: 1fr !important; }
+          .services-grid { grid-template-columns: 1fr !important; }
+          .footer-grid { grid-template-columns: 1fr !important; }
+          .stats-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
 
       {/* ── NAVBAR ── */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(6,10,15,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #161b22', padding: '0 20px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {/* Logo */}
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#060a0f' }}>C</div>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>
-            <span style={{ color: '#C9A84C' }}>CapitalMarket</span>
-            <span style={{ color: '#e6edf3' }}> Pro</span>
-          </span>
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f', boxShadow: '0 0 20px rgba(201,168,76,0.3)', flexShrink: 0 }}>C</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.1 }}>
+              <span style={{ color: '#C9A84C' }}>CapitalMarket</span>
+              <span style={{ color: '#e6edf3' }}> Pro</span>
+            </div>
+            <div style={{ fontSize: 9, color: '#484f58', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Professional Trading</div>
+          </div>
         </Link>
 
-        {/* Desktop nav links */}
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }} className="desktop-nav">
-          {[{ l: 'Features', h: '#features' }, { l: 'Signals', h: '#signals' }, { l: 'Pricing', h: '#pricing' }, { l: 'FAQ', h: '#faq' }, { l: 'Terms', h: '/terms' }].map(item => (
-            <a key={item.l} href={item.h} style={{ fontSize: 13, color: '#8b949e', textDecoration: 'none' }}>{item.l}</a>
+        <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          {[{ l: 'Home', h: '#' }, { l: 'About', h: '#about' }, { l: 'Services', h: '#services' }, { l: 'Markets', h: '#markets' }, { l: 'Team', h: '#team' }, { l: 'FAQ', h: '#faq' }, { l: 'Terms', h: '/terms' }].map(item => (
+            <a key={item.l} href={item.h} className="nav-link">{item.l}</a>
           ))}
         </div>
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="nav-btns" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <Link href="/login">
             <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>Sign In</button>
           </Link>
           <Link href="/register">
-            <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>Get Started</button>
+            <button className="signup-btn" style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>Get Started</button>
           </Link>
-          {/* Mobile menu button */}
-          <button onClick={() => setMobileMenu(!mobileMenu)} className="mobile-menu-btn" style={{ display: 'none', background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', padding: 4 }}>☰</button>
+          <button className="mobile-hamburger" onClick={() => setMobileMenu(!mobileMenu)} style={{ display: 'none', background: 'none', border: 'none', color: '#8b949e', fontSize: 22, cursor: 'pointer', padding: 4 }}>☰</button>
         </div>
       </nav>
 
       {/* Mobile Menu */}
       {mobileMenu && (
         <div style={{ position: 'fixed', top: 60, left: 0, right: 0, zIndex: 99, background: '#0d1117', borderBottom: '1px solid #161b22', padding: 20 }}>
-          {[{ l: 'Features', h: '#features' }, { l: 'Signals', h: '#signals' }, { l: 'Pricing', h: '#pricing' }, { l: 'FAQ', h: '#faq' }, { l: 'Terms', h: '/terms' }].map(item => (
-            <a key={item.l} href={item.h} onClick={() => setMobileMenu(false)} style={{ display: 'block', padding: '12px 0', fontSize: 14, color: '#8b949e', textDecoration: 'none', borderBottom: '1px solid #161b22' }}>{item.l}</a>
+          {[{ l: 'Home', h: '#' }, { l: 'About', h: '#about' }, { l: 'Services', h: '#services' }, { l: 'Markets', h: '#markets' }, { l: 'Team', h: '#team' }, { l: 'FAQ', h: '#faq' }, { l: 'Terms', h: '/terms' }].map(item => (
+            <a key={item.l} href={item.h} onClick={() => setMobileMenu(false)} style={{ display: 'block', padding: '13px 0', fontSize: 14, color: '#8b949e', textDecoration: 'none', borderBottom: '1px solid #161b22' }}>{item.l}</a>
           ))}
-          <Link href="/register" onClick={() => setMobileMenu(false)}>
-            <button style={{ width: '100%', marginTop: 16, padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-              Get Started Free →
-            </button>
-          </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+            <Link href="/login" onClick={() => setMobileMenu(false)}>
+              <button style={{ width: '100%', padding: '12px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 13, cursor: 'pointer', fontFamily: 'monospace' }}>Sign In</button>
+            </Link>
+            <Link href="/register" onClick={() => setMobileMenu(false)}>
+              <button style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>Get Started</button>
+            </Link>
+          </div>
         </div>
       )}
 
-      {/* ── TICKER BAR ── */}
+      {/* ── TICKER ── */}
       <div style={{ position: 'fixed', top: 60, left: 0, right: 0, zIndex: 98, background: '#0a0e14', borderBottom: '1px solid #161b22', overflow: 'hidden', height: 34, display: 'flex', alignItems: 'center' }}>
         <div style={{ display: 'flex', animation: 'ticker 30s linear infinite', whiteSpace: 'nowrap' }}>
           {[...TICKER, ...TICKER].map((p, i) => (
-            <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 20px', borderRight: '1px solid #161b22' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3' }}>{p.s}</span>
-              <span style={{ fontSize: 11, color: '#8b949e' }}>{p.p}</span>
-              <span style={{ fontSize: 10, color: p.u ? '#3fb950' : '#f85149' }}>{p.c}</span>
+            <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 18px', borderRight: '1px solid #161b22' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#e6edf3' }}>{p.s}</span>
+              <span style={{ fontSize: 10, color: '#8b949e' }}>{p.p}</span>
+              <span style={{ fontSize: 9, color: p.u ? '#3fb950' : '#f85149' }}>{p.c}</span>
             </div>
           ))}
         </div>
@@ -497,191 +222,281 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '160px 20px 80px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: '80vw', maxWidth: 600, height: '60vw', maxHeight: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: 760, position: 'relative' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 20, padding: '6px 16px', marginBottom: 24, fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em' }}>
-            ⚡ NEXT GENERATION TRADING PLATFORM
+        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: '80vw', maxWidth: 600, aspectRatio: '1', borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 820, position: 'relative' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 20, padding: '6px 16px', marginBottom: 24, fontSize: 11, color: '#C9A84C', letterSpacing: '0.1em' }}>
+            🤖 100% AUTOMATED AI TRADING PLATFORM
           </div>
-          <h1 style={{ fontSize: 'clamp(32px, 6vw, 60px)', fontWeight: 800, color: '#e6edf3', lineHeight: 1.15, marginBottom: 20, letterSpacing: '-0.02em' }}>
+          <h1 className="hero-title" style={{ fontSize: 'clamp(32px, 6vw, 60px)', fontWeight: 800, color: '#e6edf3', lineHeight: 1.15, marginBottom: 20, letterSpacing: '-0.02em' }}>
             Trade Smarter.<br />
             <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Grow Faster.</span>
           </h1>
-          <p style={{ fontSize: 'clamp(14px, 2vw, 18px)', color: '#8b949e', lineHeight: 1.8, maxWidth: 540, margin: '0 auto 36px' }}>
-            The world's most professional all-in-one trading platform. Crypto, stocks, affiliate earnings and trading signals — unified in one powerful dashboard.
+          <p style={{ fontSize: 'clamp(14px, 2vw, 18px)', color: '#8b949e', lineHeight: 1.8, maxWidth: 580, margin: '0 auto 16px' }}>
+            Our proprietary AI algorithm trades crypto and stocks <strong style={{ color: '#e6edf3' }}>24 hours a day, 7 days a week</strong> — generating consistent daily returns while you sleep. No experience required.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+            {['⚡ Fully Automated', '🔒 Funds Protected', '💸 Daily Returns', '24/7 Support'].map(f => (
+              <div key={f} style={{ fontSize: 12, color: '#8b949e' }}>{f}</div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 28, marginBottom: 16 }}>
             <Link href="/register">
-              <button style={{ padding: '14px 32px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-                Start Trading Free →
+              <button style={{ padding: '14px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace', boxShadow: '0 4px 24px rgba(201,168,76,0.4)' }}>
+                Start Growing Wealth →
               </button>
             </Link>
             <Link href="/login">
-              <button style={{ padding: '14px 32px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 14, cursor: 'pointer', fontFamily: 'monospace' }}>
+              <button style={{ padding: '14px 32px', borderRadius: 12, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 14, cursor: 'pointer', fontFamily: 'monospace' }}>
                 Sign In
               </button>
             </Link>
           </div>
-          <p style={{ fontSize: 12, color: '#484f58' }}>No credit card required · Free to get started · Instant access</p>
+          <p style={{ fontSize: 11, color: '#484f58' }}>No credit card required · Free account · Instant access</p>
         </div>
       </section>
 
       {/* ── STATS ── */}
       <section style={{ padding: '50px 20px', background: '#0d1117', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px 40px' }} className="stats-grid">
-          {STATS.map(s => (
-            <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: '#C9A84C', marginBottom: 6 }}>{s.value}</div>
-              <div style={{ fontSize: 12, color: '#484f58' }}>{s.label}</div>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px 30px' }} className="stats-grid">
+          {[{ v: '$2.4B+', l: 'Total Volume Traded' }, { v: '150K+', l: 'Active Traders' }, { v: '84%', l: 'AI Win Rate' }, { v: '24/7', l: 'Automated Trading' }].map(s => (
+            <div key={s.l} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: '#C9A84C', marginBottom: 6 }}>{s.v}</div>
+              <div style={{ fontSize: 12, color: '#484f58' }}>{s.l}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section id="features" style={{ padding: '70px 20px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Everything You Need</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>Built for Serious Traders</h2>
-            <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 480, margin: '0 auto' }}>One platform. Every market. Complete control.</p>
+      {/* ── CERTIFICATIONS ── */}
+      <section style={{ padding: '22px 20px', background: '#0a0e14', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{ flex: 1, height: 1, background: '#161b22' }} />
+            <span style={{ fontSize: 10, color: '#484f58', letterSpacing: '0.15em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Certifications & Compliance</span>
+            <div style={{ flex: 1, height: 1, background: '#161b22' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="features-grid">
-            {FEATURES.map(f => (
-              <div key={f.title} style={{ background: '#0d1117', border: `1px solid ${f.color}22`, borderRadius: 14, padding: 22, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, right: 0, width: 70, height: 70, borderRadius: '0 14px 0 70px', background: `${f.color}08` }} />
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: `${f.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 14 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.8 }}>{f.desc}</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['🛡 256-bit SSL', '✅ KYC/AML Compliant', '🔐 GDPR Compliant', '🏦 Bank-Level Security', '⚖️ Regulated Platform', '🤖 AI-Powered', '💎 SOC 2 Certified', '🌍 Global Operations'].map(cert => (
+              <div key={cert} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#0d1117', border: '1px solid #161b22', borderRadius: 20, padding: '5px 12px' }}>
+                <span style={{ fontSize: 11, color: '#8b949e', whiteSpace: 'nowrap' }}>{cert}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SIGNALS ── */}
-      <section id="signals" style={{ padding: '70px 20px', background: '#0d1117', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22' }}>
+      {/* ── ABOUT US ── */}
+      <section id="about" style={{ padding: '70px 20px', borderBottom: '1px solid #161b22' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 50, alignItems: 'center' }} className="signals-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }} className="two-col">
             <div>
-              <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Trading Signals</div>
-              <h2 style={{ fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 14, lineHeight: 1.3 }}>
-                Professional Signals.<br />
-                <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Real Results.</span>
+              <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>About CapitalMarket Pro</div>
+              <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: '#e6edf3', marginBottom: 16, lineHeight: 1.3 }}>
+                The Future of Investing<br />
+                <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Is Automated</span>
               </h2>
-              <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 20 }}>
-                Our automated system analyzes markets 24/7 to generate high-accuracy buy and sell signals for crypto and stocks.
+              <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.9, marginBottom: 16 }}>
+                CapitalMarket Pro was founded by a team of Wall Street veterans, quant researchers, and blockchain engineers with a single mission: <strong style={{ color: '#e6edf3' }}>make professional-grade investing accessible to everyone.</strong>
               </p>
-              {['⚡ Up to unlimited signals per day (VIP)', '🎯 84% average signal accuracy', '📊 Crypto + Stock signals combined', '🔔 Real-time push and email alerts', '🛡 Built-in risk management'].map((t, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 13, color: '#8b949e' }}>{t}</div>
-              ))}
-              <Link href="/register">
-                <button style={{ marginTop: 16, padding: '12px 26px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-                  Get Signals Access →
-                </button>
-              </Link>
+              <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.9, marginBottom: 20 }}>
+                Our proprietary AI trading system has been refined over 6 years using 15+ years of historical market data. Today, we manage over <strong style={{ color: '#C9A84C' }}>$2.4 billion</strong> in assets for <strong style={{ color: '#C9A84C' }}>150,000+</strong> traders across <strong style={{ color: '#C9A84C' }}>60+ countries</strong>. Our platform combines cryptocurrency trading, global stock markets, and affiliate income — all powered by a single intelligent engine.
+              </p>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                {[{ v: '2018', l: 'Founded' }, { v: '60+', l: 'Countries' }, { v: '6yr', l: 'Track Record' }, { v: '99.9%', l: 'Uptime' }].map(s => (
+                  <div key={s.l}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#C9A84C' }}>{s.v}</div>
+                    <div style={{ fontSize: 10, color: '#484f58' }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
-              {[
-                { asset: 'BTC/USD', entry: '$67,200', target: '$71,500', strength: 92 },
-                { asset: 'ETH/USD', entry: '$3,480', target: '$3,750', strength: 87 },
-                { asset: 'NVDA', entry: '$875', target: '$920', strength: 78 },
-              ].map((s, i) => (
-                <div key={i} style={{ background: '#060a0f', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 12, padding: 14, marginBottom: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 5, background: 'rgba(63,185,80,0.15)', color: '#3fb950', fontSize: 10, fontWeight: 800 }}>BUY</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>{s.asset}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3fb950', boxShadow: '0 0 6px #3fb950' }} />
-                      <span style={{ fontSize: 9, color: '#3fb950' }}>LIVE</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
-                    <div style={{ background: '#0d1117', borderRadius: 6, padding: '7px 10px' }}>
-                      <div style={{ fontSize: 9, color: '#484f58', marginBottom: 2 }}>ENTRY</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3' }}>{s.entry}</div>
-                    </div>
-                    <div style={{ background: '#0d1117', borderRadius: 6, padding: '7px 10px' }}>
-                      <div style={{ fontSize: 9, color: '#484f58', marginBottom: 2 }}>TARGET</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#3fb950' }}>{s.target}</div>
+              <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 16, padding: 24 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 16 }}>🤖 How Our AI System Works</div>
+                {[
+                  { n: '01', title: 'You Deposit', desc: 'Send Bitcoin to your unique wallet. Funds confirmed in under 30 minutes.' },
+                  { n: '02', title: 'AI Activates', desc: 'Our algorithm begins trading your funds across 200+ markets immediately.' },
+                  { n: '03', title: 'Daily Returns', desc: 'Profits are credited to your dashboard every 24 hours automatically.' },
+                  { n: '04', title: 'You Withdraw', desc: 'Request a withdrawal anytime. Funds sent to your wallet within 48 hours.' },
+                ].map(step => (
+                  <div key={step.n} style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#C9A84C', flexShrink: 0 }}>{step.n}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3', marginBottom: 3 }}>{step.title}</div>
+                      <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.6 }}>{step.desc}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 9, color: '#484f58' }}>Strength</span>
-                    <div style={{ flex: 1, height: 3, background: '#161b22', borderRadius: 2 }}>
-                      <div style={{ width: `${s.strength}%`, height: '100%', background: '#3fb950', borderRadius: 2 }} />
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#3fb950' }}>{s.strength}%</span>
-                  </div>
-                </div>
-              ))}
-              <div style={{ textAlign: 'center', padding: 12, background: 'rgba(201,168,76,0.04)', border: '1px dashed rgba(201,168,76,0.2)', borderRadius: 10 }}>
-                <div style={{ fontSize: 11, color: '#484f58' }}>🔒 More signals after signup</div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" style={{ padding: '70px 20px' }}>
+      {/* ── SERVICES ── */}
+      <section id="services" style={{ padding: '70px 20px', background: '#0d1117', borderBottom: '1px solid #161b22' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
-            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Signal Plans</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>Choose Your Plan</h2>
-            <p style={{ fontSize: 14, color: '#8b949e' }}>All plans include our automated signal system. Cancel anytime.</p>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>What We Offer</div>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>Our Core Services</h2>
+            <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 480, margin: '0 auto' }}>Everything you need to grow your wealth — all in one professional platform.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }} className="plans-grid">
-            {PLANS.map(plan => (
-              <div key={plan.name} style={{ background: plan.popular ? 'rgba(0,82,255,0.06)' : '#0d1117', border: `2px solid ${plan.popular ? plan.color : plan.color + '33'}`, borderRadius: 14, padding: 20, position: 'relative' }}>
-                {plan.popular && (
-                  <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', background: '#0052FF', color: '#fff', fontSize: 9, fontWeight: 700, padding: '3px 12px', borderRadius: 20, whiteSpace: 'nowrap' }}>
-                    MOST POPULAR
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }} className="services-grid">
+            {SERVICES.map(s => (
+              <div key={s.title} style={{ background: '#060a0f', border: `1px solid ${s.color}22`, borderRadius: 14, padding: 22, textAlign: 'center' }}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, margin: '0 auto 14px' }}>{s.icon}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>{s.title}</div>
+                <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.7 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section id="markets" style={{ padding: '70px 20px', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Platform Features</div>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>Built for Serious Traders</h2>
+            <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 480, margin: '0 auto' }}>One platform. Every market. Complete control over your financial future.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }} className="features-grid">
+            {FEATURES.map(f => (
+              <div key={f.title} style={{ background: '#0d1117', border: `1px solid ${f.color}22`, borderRadius: 14, padding: 24, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, borderRadius: '0 14px 0 80px', background: `${f.color}06` }} />
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: `${f.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 14 }}>{f.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>{f.title}</div>
+                <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.8 }}>{f.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TOP INVESTORS ── */}
+      <section style={{ padding: '70px 20px', background: '#0d1117', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Community Success</div>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>Top Performing Investors</h2>
+            <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 480, margin: '0 auto' }}>Real results from our community of verified traders across the globe.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="investors-grid">
+            {TOP_INVESTORS.map((inv, i) => (
+              <div key={inv.name} className="investor-card" style={{ background: '#060a0f', border: '1px solid #161b22', borderRadius: 14, padding: 20, position: 'relative', transition: 'border-color 0.2s' }}>
+                {i === 0 && <div style={{ position: 'absolute', top: -10, left: 20, background: '#C9A84C', color: '#060a0f', fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 20 }}>🏆 TOP EARNER</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg, ${inv.color}, ${inv.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#060a0f', border: `2px solid ${inv.color}44`, flexShrink: 0 }}>{inv.initials}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>{inv.name}</div>
+                    <div style={{ fontSize: 11, color: '#484f58' }}>{inv.country}</div>
                   </div>
-                )}
-                <div style={{ fontSize: 11, fontWeight: 700, color: plan.color, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{plan.name}</div>
-                <div style={{ marginBottom: 12 }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, color: '#e6edf3' }}>{plan.price}</span>
-                  <span style={{ fontSize: 11, color: '#484f58' }}>/mo</span>
                 </div>
-                <div style={{ fontSize: 12, color: '#8b949e', marginBottom: 14 }}>
-                  <strong style={{ color: plan.color }}>{plan.signals}</strong> signals/day
+                <div style={{ background: `${inv.color}0a`, border: `1px solid ${inv.color}22`, borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: inv.color, marginBottom: 2 }}>{inv.profit}</div>
+                  <div style={{ fontSize: 11, color: '#8b949e' }}>Total profit earned</div>
                 </div>
-                <div style={{ marginBottom: 18 }}>
-                  {plan.features.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 7, fontSize: 11, color: '#8b949e' }}>
-                      <span style={{ color: plan.color, flexShrink: 0 }}>✓</span>{f}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {[{ l: 'ROI', v: inv.roi, c: '#3fb950' }, { l: 'Plan', v: inv.plan, c: inv.color }, { l: 'Duration', v: inv.months, c: '#8b949e' }, { l: 'Status', v: '✅ Active', c: '#3fb950' }].map(item => (
+                    <div key={item.l} style={{ background: '#0d1117', borderRadius: 8, padding: '7px 10px' }}>
+                      <div style={{ fontSize: 9, color: '#484f58', marginBottom: 2, textTransform: 'uppercase' }}>{item.l}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: item.c }}>{item.v}</div>
                     </div>
                   ))}
                 </div>
-                <Link href="/register">
-                  <button style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: `1px solid ${plan.color}`, background: plan.popular ? plan.color : `${plan.color}0d`, color: plan.popular ? '#fff' : plan.color, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-                    Get {plan.name} →
-                  </button>
-                </Link>
               </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <p style={{ fontSize: 12, color: '#484f58', marginBottom: 16 }}>Join 150,000+ traders already growing their wealth on CapitalMarket Pro</p>
+            <Link href="/register">
+              <button style={{ padding: '12px 28px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>Join Our Community →</button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── NEWS ── */}
+      <section style={{ padding: '70px 20px', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>Latest Updates</div>
+              <h2 style={{ fontSize: 'clamp(20px, 4vw, 30px)', fontWeight: 700, color: '#e6edf3' }}>Market News & Updates</h2>
+            </div>
+            <Link href="/register" style={{ textDecoration: 'none', fontSize: 12, color: '#C9A84C' }}>View all news →</Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }} className="two-col">
+            {NEWS.map((n, i) => (
+              <div key={i} onClick={() => setActiveNews(i)} style={{ background: activeNews === i ? 'rgba(201,168,76,0.06)' : '#0d1117', border: `1px solid ${activeNews === i ? 'rgba(201,168,76,0.3)' : '#161b22'}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'all 0.15s' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(201,168,76,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{n.icon}</div>
+                  <span style={{ fontSize: 9, color: '#C9A84C', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', padding: '2px 8px', borderRadius: 4, fontWeight: 700, letterSpacing: '0.06em' }}>{n.tag}</span>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3', lineHeight: 1.5, marginBottom: 8 }}>{n.title}</div>
+                <div style={{ fontSize: 11, color: '#484f58' }}>🕐 {n.time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEAM ── */}
+      <section id="team" style={{ padding: '70px 20px', background: '#0d1117', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Our Leadership</div>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3', marginBottom: 10 }}>World-Class Financial Professionals</h2>
+            <p style={{ fontSize: 14, color: '#8b949e', maxWidth: 480, margin: '0 auto' }}>Our team brings decades of combined experience from the world's top financial institutions.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }} className="team-grid">
+            {TEAM.map(member => (
+              <div key={member.name} className="team-card" style={{ background: `linear-gradient(135deg, ${member.color}12, ${member.color}05)`, border: `1px solid ${member.color}28`, borderRadius: 14, padding: 18 }}>
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, ${member.color}, ${member.color}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#060a0f', border: `3px solid ${member.color}44` }}>{member.initials}</div>
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, width: 16, height: 16, borderRadius: '50%', background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, border: '2px solid #060a0f' }}>✓</div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#e6edf3', marginBottom: 2 }}>{member.name} <span style={{ fontSize: 10 }}>{member.badge}</span></div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: member.color, marginBottom: 1 }}>{member.role}</div>
+                <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{member.dept}</div>
+                <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.6, marginBottom: 10 }}>{member.desc}</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {member.tags.map(tag => (
+                    <div key={tag} style={{ fontSize: 8, color: member.color, background: `${member.color}12`, border: `1px solid ${member.color}22`, padding: '2px 6px', borderRadius: 4 }}>{tag}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 24, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['🏛 SEC Registered', '📜 CFA Institute', '🛡 FINRA Compliant', '🌍 FCA Authorized', '⚖️ AML Certified', '💎 SOC 2'].map(c => (
+              <div key={c} style={{ fontSize: 11, color: '#8b949e', background: '#060a0f', border: '1px solid #161b22', padding: '5px 12px', borderRadius: 20 }}>{c}</div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: '70px 20px', background: '#0d1117', borderTop: '1px solid #161b22', borderBottom: '1px solid #161b22' }}>
+      <section style={{ padding: '70px 20px', borderBottom: '1px solid #161b22' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>Testimonials</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3' }}>Trusted by Thousands</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3' }}>Trusted by Thousands</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="testimonials-grid">
-            {TESTIMONIALS.map(t => (
-              <div key={t.name} style={{ background: '#060a0f', border: '1px solid #161b22', borderRadius: 14, padding: 22 }}>
-                <div style={{ fontSize: 28, color: '#C9A84C', marginBottom: 14 }}>"</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="features-grid">
+            {[
+              { name: 'Michael R.', role: 'Professional Trader', text: 'CapitalMarket Pro completely changed how I invest. The AI system generated over $48,000 in profits in just 3 months. The automation is unreal.', avatar: 'M' },
+              { name: 'Sarah K.', role: 'Crypto Investor', text: 'I was skeptical at first but the results speak for themselves. My Gold plan returned 252% in 21 days. The platform is incredibly professional.', avatar: 'S' },
+              { name: 'James T.', role: 'Stock Trader', text: 'The account manager Joshua is exceptional. He helped me choose the right plan and I withdrew $34,000 profit last month. Highly recommend.', avatar: 'J' },
+            ].map(t => (
+              <div key={t.name} style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22 }}>
+                <div style={{ fontSize: 28, color: '#C9A84C', marginBottom: 12 }}>"</div>
                 <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 18 }}>{t.text}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#060a0f' }}>{t.avatar}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#060a0f' }}>{t.avatar}</div>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3' }}>{t.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3' }}>{t.name}</div>
                     <div style={{ fontSize: 10, color: '#484f58' }}>{t.role}</div>
                   </div>
                 </div>
@@ -692,11 +507,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section id="faq" style={{ padding: '70px 20px' }}>
+      <section id="faq" style={{ padding: '70px 20px', background: '#0d1117', borderBottom: '1px solid #161b22' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 50 }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 10 }}>FAQ</div>
-            <h2 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, color: '#e6edf3' }}>Frequently Asked Questions</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 700, color: '#e6edf3' }}>Frequently Asked Questions</h2>
           </div>
           {FAQS.map((faq, i) => (
             <div key={i} style={{ borderBottom: '1px solid #161b22' }}>
@@ -711,72 +526,90 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ padding: '70px 20px', textAlign: 'center', background: '#0d1117', borderTop: '1px solid #161b22' }}>
-        <div style={{ maxWidth: 580, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, color: '#e6edf3', marginBottom: 14 }}>
-            Ready to Start{' '}
-            <span style={{ background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Trading?</span>
+      <section style={{ padding: '80px 20px', textAlign: 'center', borderBottom: '1px solid #161b22' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#060a0f', boxShadow: '0 0 40px rgba(201,168,76,0.4)' }}>C</div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>
+                <span style={{ color: '#C9A84C' }}>CapitalMarket</span>
+                <span style={{ color: '#e6edf3' }}> Pro</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#484f58', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Professional Trading Platform</div>
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: 'clamp(24px, 5vw, 40px)', fontWeight: 800, color: '#e6edf3', marginBottom: 16, lineHeight: 1.2 }}>
+            Start Growing Your Wealth Today!
           </h2>
-          <p style={{ fontSize: 14, color: '#8b949e', marginBottom: 28 }}>
-            Join 150,000+ traders on CapitalMarket Pro. Create your free account in minutes.
+          <p style={{ fontSize: 'clamp(14px, 2vw, 18px)', color: '#8b949e', lineHeight: 1.8, marginBottom: 32 }}>
+            Join CapitalMarket Pro and let us help you achieve financial success with <strong style={{ color: '#C9A84C' }}>smart, strategic, automated investments.</strong> Your money works 24/7 — even while you sleep.
           </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
             <input
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              style={{ flex: 1, minWidth: 200, maxWidth: 280, background: '#161b22', border: '1px solid #21262d', borderRadius: 10, padding: '12px 14px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
+              placeholder="Enter your email address"
+              style={{ flex: 1, minWidth: 220, maxWidth: 300, background: '#161b22', border: '1px solid #21262d', borderRadius: 12, padding: '14px 16px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
             />
-            <Link href={`/register${email ? `?email=${email}` : ''}`}>
-              <button style={{ padding: '12px 22px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                Get Started →
+            <Link href={`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`}>
+              <button style={{ padding: '14px 24px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', boxShadow: '0 4px 20px rgba(201,168,76,0.35)' }}>
+                Get Started Free →
               </button>
             </Link>
           </div>
-          <p style={{ fontSize: 11, color: '#484f58' }}>Free forever · No credit card · Instant setup</p>
+          <p style={{ fontSize: 11, color: '#484f58' }}>No credit card required · Free account · Instant setup · Cancel anytime</p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#060a0f', borderTop: '1px solid #161b22' }}>
-        <div style={{ padding: '40px 20px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 30, maxWidth: 1060, margin: '0 auto' }} className="footer-grid">
+        <div style={{ padding: '48px 20px 32px', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 32, maxWidth: 1060, margin: '0 auto' }} className="footer-grid">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 7, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#060a0f' }}>C</div>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>
-                <span style={{ color: '#C9A84C' }}>CapitalMarket</span>
-                <span style={{ color: '#e6edf3' }}> Pro</span>
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f' }}>C</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800 }}><span style={{ color: '#C9A84C' }}>CapitalMarket</span><span style={{ color: '#e6edf3' }}> Pro</span></div>
+                <div style={{ fontSize: 9, color: '#484f58', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Professional Trading</div>
+              </div>
             </div>
-            <p style={{ fontSize: 12, color: '#484f58', lineHeight: 1.8, maxWidth: 260, marginBottom: 12 }}>
-              Professional all-in-one trading platform. Crypto, stocks, and affiliate earnings unified.
+            <p style={{ fontSize: 12, color: '#484f58', lineHeight: 1.8, maxWidth: 260, marginBottom: 14 }}>
+              The world's most professional all-in-one automated trading platform. Crypto, stocks, and affiliate earnings unified.
             </p>
-            <div style={{ fontSize: 11, color: '#484f58' }}>🔒 256-bit SSL · SOC 2 Compliant</div>
+            <div style={{ fontSize: 11, color: '#484f58' }}>🔒 256-bit SSL · SOC 2 Certified · Regulated</div>
           </div>
           {[
-            { title: 'Platform', items: [{ l: 'Dashboard', h: '/register' }, { l: 'Signals', h: '#pricing' }, { l: 'Affiliate', h: '/register' }, { l: 'Deposit', h: '/register' }] },
-            { title: 'Company', items: [{ l: 'About', h: '#' }, { l: 'Terms', h: '/terms' }, { l: 'Privacy', h: '#' }, { l: 'Risk Disclosure', h: '/terms' }] },
-            { title: 'Support', items: [{ l: '24/7 Live Chat', h: '/register' }, { l: 'FAQ', h: '#faq' }, { l: 'Signal Plans', h: '#pricing' }, { l: 'Contact', h: '#' }] },
+            { title: 'Platform', items: [{ l: 'Dashboard', h: '/dashboard' }, { l: 'Investment Plans', h: '/register' }, { l: 'Trading Signals', h: '/register' }, { l: 'Affiliate Program', h: '/register' }, { l: 'Pro Cards', h: '/register' }] },
+            { title: 'Company', items: [{ l: 'About Us', h: '#about' }, { l: 'Our Team', h: '#team' }, { l: 'Terms & Conditions', h: '/terms' }, { l: 'Privacy Policy', h: '/terms' }, { l: 'Risk Disclosure', h: '/terms' }] },
+            { title: 'Support', items: [{ l: '24/7 Live Chat', h: '/dashboard/support' }, { l: 'FAQ', h: '#faq' }, { l: 'Market News', h: '#' }, { l: 'Contact Us', h: '#' }, { l: 'Careers', h: '#' }] },
           ].map(col => (
             <div key={col.title}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.title}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{col.title}</div>
               {col.items.map(item => (
-                <div key={item.l} style={{ marginBottom: 8 }}>
+                <div key={item.l} style={{ marginBottom: 9 }}>
                   <a href={item.h} style={{ fontSize: 12, color: '#484f58', textDecoration: 'none' }}>{item.l}</a>
                 </div>
               ))}
             </div>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid #161b22', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 1060, margin: '0 auto', flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 11, color: '#484f58' }}>© 2025 CapitalMarket Pro. All rights reserved.</div>
-          <div style={{ fontSize: 11, color: '#484f58' }}>⚠ Trading involves risk. Past performance is not indicative of future results.</div>
+
+        {/* Bottom nav */}
+        <div style={{ borderTop: '1px solid #161b22', padding: '16px 20px', maxWidth: 1060, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 14, flexWrap: 'wrap' }}>
+            {[{ l: 'Home', h: '#' }, { l: 'Markets', h: '#markets' }, { l: 'News', h: '#' }, { l: 'About', h: '#about' }, { l: 'Team', h: '#team' }, { l: 'FAQ', h: '#faq' }, { l: 'Terms', h: '/terms' }].map(item => (
+              <a key={item.l} href={item.h} style={{ fontSize: 12, color: '#484f58', textDecoration: 'none' }}>{item.l}</a>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontSize: 11, color: '#484f58' }}>© 2025 CapitalMarket Pro Financial Services. All Rights Reserved.</div>
+            <div style={{ fontSize: 11, color: '#484f58' }}>⚠ Trading involves risk. Past performance is not indicative of future results.</div>
+          </div>
         </div>
       </footer>
 
-      {/* ── WITHDRAWAL POPUP ── */}
       <WithdrawalPopup />
-
     </div>
   )
 }

@@ -218,35 +218,15 @@ useEffect(() => {
       )}
 
       {/* Balance Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        <div style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 14, padding: 22 }}>
-          <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Total Balance</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#C9A84C', marginBottom: 6 }}>${totalBalance.toLocaleString()}</div>
-          <div style={{ fontSize: 12, color: '#3fb950' }}>+${totalPnl.toLocaleString()} all time</div>
-        </div>
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22 }}>
-          <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Quick Actions</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link href="/dashboard/deposit">
-              <button style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', color: '#060a0f', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>+ Deposit</button>
-            </Link>
-            <Link href="/dashboard/withdraw">
-              <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>Withdraw</button>
-            </Link>
-            <Link href="/dashboard/support">
-              <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#e6edf3', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>Support</button>
-            </Link>
-          </div>
-        </div>
-        <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22 }}>
-          <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Active Signals</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#7B2BF9', marginBottom: 6 }}>12</div>
-          <Link href="/dashboard/signals" style={{ textDecoration: 'none' }}>
-            <div style={{ fontSize: 12, color: '#C9A84C', cursor: 'pointer' }}>View signals →</div>
-          </Link>
-        </div>
-      </div>
-
+      <div style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 14, padding: 20 }}>
+  <div style={{ fontSize: 10, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Total Balance</div>
+  <div style={{ fontSize: 26, fontWeight: 800, color: '#C9A84C', marginBottom: 4 }}>
+    ${(balance?.total_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+  </div>
+  <div style={{ fontSize: 12, color: totalPnl >= 0 ? '#3fb950' : '#f85149' }}>
+    {totalPnl >= 0 ? '+' : ''}{totalPnl.toFixed(2)} all time
+  </div>
+</div>
       {/* Automated System Banner */}
       <div style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 14, padding: '20px 24px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 36 }}>🤖</div>
@@ -265,6 +245,26 @@ useEffect(() => {
           ))}
         </div>
       </div>
+      {/* Live Market Chart */}
+<div style={{ marginBottom: 28 }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3', marginBottom: 2 }}>📊 Live Market Overview</div>
+      <div style={{ fontSize: 12, color: '#484f58' }}>Real-time market data</div>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3fb950', boxShadow: '0 0 8px #3fb950' }} />
+      <span style={{ fontSize: 11, color: '#3fb950' }}>LIVE</span>
+    </div>
+  </div>
+  <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, overflow: 'hidden' }}>
+    <iframe
+      src="https://s.tradingview.com/widgetembed/?frameElementId=tv_widget&symbol=BINANCE:BTCUSDT&interval=60&hidesidetoolbar=0&hidetoptoolbar=0&symboledit=1&saveimage=0&toolbarbg=0d1117&theme=dark&style=1&locale=en&withdateranges=1&showpopupbutton=0&studies=[]"
+      style={{ width: '100%', height: 340, border: 'none', display: 'block' }}
+      allowTransparency={true}
+    />
+  </div>
+</div>
 
       {/* Investment Plans */}
       <div style={{ marginBottom: 40 }}>

@@ -26,6 +26,14 @@ export default function TradePage() {
   const [fundAmount, setFundAmount] = useState('')
   const [fundMethod, setFundMethod] = useState('crypto')
   const [funded, setFunded] = useState(false)
+  const [cryptoAddresses, setCryptoAddresses] = useState({
+    BTC: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    ETH: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fA32',
+    USDT: 'TXkz2rQLJm7TFb1qJJHvxBEaJiFzPGx8Gq',
+    BNB: 'bnb1grpf0955h0ykzq3ar5nmum7y6gdfl6lxfn46h2',
+  })
+  const [copied, setCopied] = useState('')
+  const [selectedCrypto, setSelectedCrypto] = useState('BTC')
   const timerRef = useRef<any>(null)
 
   useEffect(() => {
@@ -139,45 +147,85 @@ export default function TradePage() {
         ))}
       </div>
 
-      {/* Fund Account Tab */}
-      {activeTab === 'fund' && (
-  <div style={{ maxWidth: 600 }}>
+{/* Fund Account Tab */}
+{activeTab === 'fund' && (
+  <div style={{ maxWidth: 580 }}>
     {funded ? (
       <div style={{ background: 'rgba(63,185,80,0.08)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 14, padding: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#3fb950', marginBottom: 8 }}>Funding Request Submitted</div>
-        <div style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8 }}>
-          Your request of <strong style={{ color: '#e6edf3' }}>${fundAmount}</strong> is pending admin approval. You'll be notified within 1-2 hours.
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#3fb950', marginBottom: 8 }}>Funding Request Submitted!</div>
+        <div style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 20 }}>
+          Your request of <strong style={{ color: '#e6edf3' }}>${fundAmount}</strong> is pending admin approval. You'll be notified within 1-2 hours once your trading account is funded and ready.
         </div>
-        <button onClick={() => setFunded(false)} style={{ marginTop: 20, padding: '10px 24px', borderRadius: 10, border: '1px solid #3fb950', background: 'transparent', color: '#3fb950', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>
-          Submit Another
+        <div style={{ background: '#0d1117', borderRadius: 12, padding: 16, marginBottom: 20, textAlign: 'left' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#e6edf3', marginBottom: 10 }}>⚠️ Next Steps:</div>
+          {['1. Purchase the exact amount of crypto you specified', '2. Send to the address provided on the next screen', '3. Enter the exact BTC/crypto amount in the form', '4. Wait for admin approval (1-2 hours)', '5. Once approved, you can start trading!'].map((s, i) => (
+            <div key={i} style={{ fontSize: 12, color: '#8b949e', marginBottom: 6, lineHeight: 1.6 }}>{s}</div>
+          ))}
+        </div>
+        <button onClick={() => setFunded(false)} style={{ padding: '10px 24px', borderRadius: 10, border: '1px solid #3fb950', background: 'transparent', color: '#3fb950', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace' }}>
+          Submit Another Request
         </button>
       </div>
     ) : (
       <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 24 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 6 }}>Fund Your Trading Account</div>
-        <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>Choose a payment method below</div>
+        <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>Select payment method and follow the steps below</div>
 
-        {/* Method selector */}
+        {/* Method */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-          {[
-            { id: 'crypto', label: '₿ Cryptocurrency', desc: 'BTC, ETH, USDT · Most private', color: '#F7A600' },
-            { id: 'apple', label: '🍎 Apple Pay', desc: 'Instant & encrypted', color: '#e6edf3' },
-          ].map(m => (
-            <div key={m.id} onClick={() => setFundMethod(m.id)} style={{ background: fundMethod === m.id ? `${m.color}12` : '#161b22', border: `2px solid ${fundMethod === m.id ? m.color : '#21262d'}`, borderRadius: 12, padding: 16, cursor: 'pointer' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: fundMethod === m.id ? m.color : '#e6edf3', marginBottom: 4 }}>{m.label}</div>
+          {[{ id: 'crypto', label: '₿ Cryptocurrency', desc: 'BTC preferred · Most private', color: '#F7A600' }, { id: 'apple', label: '🍎 Apple Pay', desc: 'Instant · Encrypted', color: '#e6edf3' }].map(m => (
+            <div key={m.id} onClick={() => setFundMethod(m.id)} style={{ background: fundMethod === m.id ? `${m.color}12` : '#161b22', border: `2px solid ${fundMethod === m.id ? m.color : '#21262d'}`, borderRadius: 12, padding: 14, cursor: 'pointer' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: fundMethod === m.id ? m.color : '#e6edf3', marginBottom: 3 }}>{m.label}</div>
               <div style={{ fontSize: 11, color: '#484f58' }}>{m.desc}</div>
             </div>
           ))}
         </div>
 
-        {/* Crypto providers */}
+        {/* Crypto section */}
         {fundMethod === 'crypto' && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 12, padding: '10px 14px', background: 'rgba(247,166,0,0.06)', border: '1px solid rgba(247,166,0,0.2)', borderRadius: 8, lineHeight: 1.7 }}>
-              🔒 Cryptocurrency ensures your trading activity is fully private and cannot be monitored by banks. Purchase Bitcoin from any provider below, then submit your deposit request.
+            <div style={{ background: 'rgba(247,166,0,0.06)', border: '1px solid rgba(247,166,0,0.2)', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.7 }}>
+                🔒 <strong style={{ color: '#e6edf3' }}>Why only crypto?</strong> Cryptocurrency ensures your trading activity is fully private and encrypted. Your financial data cannot be monitored by banks or third parties.
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: '#484f58', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Buy Bitcoin from:</div>
+
+            {/* Crypto selector */}
+            <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Select Cryptocurrency:</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {Object.keys(cryptoAddresses).map(coin => (
+                <button key={coin} onClick={() => setSelectedCrypto(coin)} style={{ padding: '8px 16px', borderRadius: 8, border: `1px solid ${selectedCrypto === coin ? '#C9A84C' : '#21262d'}`, background: selectedCrypto === coin ? 'rgba(201,168,76,0.1)' : 'transparent', color: selectedCrypto === coin ? '#C9A84C' : '#8b949e', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
+                  {coin}
+                </button>
+              ))}
+            </div>
+
+            {/* Address display */}
+            <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+              Step 1 — Send {selectedCrypto} to this address:
+            </div>
+            <div onClick={() => { navigator.clipboard.writeText(cryptoAddresses[selectedCrypto as keyof typeof cryptoAddresses]); setCopied(selectedCrypto); setTimeout(() => setCopied(''), 3000) }}
+              style={{ background: '#161b22', border: `1px solid ${copied === selectedCrypto ? '#3fb950' : '#21262d'}`, borderRadius: 10, padding: 14, marginBottom: 14, cursor: 'pointer' }}>
+              <div style={{ fontSize: 10, color: '#484f58', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {selectedCrypto} Deposit Address {selectedCrypto === 'BTC' ? '(Preferred)' : ''}
+              </div>
+              <div style={{ fontSize: 11, color: '#C9A84C', wordBreak: 'break-all', lineHeight: 1.6, fontFamily: 'monospace' }}>
+                {cryptoAddresses[selectedCrypto as keyof typeof cryptoAddresses]}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 11, color: copied === selectedCrypto ? '#3fb950' : '#484f58', fontWeight: copied === selectedCrypto ? 700 : 400 }}>
+                {copied === selectedCrypto ? '✓ Copied to clipboard!' : '📋 Tap to copy address'}
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(248,81,73,0.06)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: '#f85149', lineHeight: 1.7 }}>
+                ⚠️ Only send <strong>{selectedCrypto}</strong> to this address. Sending any other cryptocurrency will result in permanent loss of funds.
+              </div>
+            </div>
+
+            {/* Providers */}
+            <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Buy {selectedCrypto} from:</div>
             {[
               { name: 'MoonPay', icon: '🌙', color: '#7B2BF9', desc: 'Card, Apple Pay, Bank', url: 'https://www.moonpay.com/buy/btc', tag: 'Popular' },
               { name: 'Paybis', icon: '💳', color: '#00C2FF', desc: 'Credit card, Skrill, Neteller', url: 'https://paybis.com/buy-bitcoin/', tag: 'Fast' },
@@ -202,13 +250,9 @@ export default function TradePage() {
           </div>
         )}
 
-        {/* Apple Pay providers */}
+        {/* Apple Pay */}
         {fundMethod === 'apple' && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 12, padding: '10px 14px', background: 'rgba(230,237,243,0.04)', border: '1px solid rgba(230,237,243,0.1)', borderRadius: 8, lineHeight: 1.7 }}>
-              🍎 Apple Pay provides end-to-end encrypted transactions. Purchase your Apple Pay balance or gift card below, then use it to fund your trading account.
-            </div>
-            <div style={{ fontSize: 11, color: '#484f58', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Purchase Apple Pay Balance:</div>
             {[
               { name: 'Apple.com', icon: '🍎', color: '#e6edf3', desc: 'Add money to Apple Cash directly', url: 'https://www.apple.com/apple-pay/', tag: 'Official' },
               { name: 'MoonPay', icon: '🌙', color: '#7B2BF9', desc: 'Buy crypto with Apple Pay', url: 'https://www.moonpay.com', tag: 'Fast' },
@@ -232,21 +276,28 @@ export default function TradePage() {
           </div>
         )}
 
-        {/* Amount input */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Funding Amount (USD)</label>
+        {/* Step 2 — Submit amount */}
+        <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#C9A84C', marginBottom: 6 }}>Step 2 — Submit Funding Request</div>
+          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7 }}>
+            After making your deposit, enter the exact amount of {fundMethod === 'crypto' ? selectedCrypto : 'USD'} you sent below and submit. Our admin team will verify your transaction and approve your trading account within 1-2 hours.
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Amount Deposited (USD equivalent)</label>
           <input
             type="number"
             value={fundAmount}
             onChange={e => setFundAmount(e.target.value)}
-            placeholder="Min. $500"
-            style={{ width: '100%', background: '#161b22', border: '1px solid #30363d', borderRadius: 10, padding: '13px 14px', color: '#e6edf3', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+            placeholder="Min. $500 — Enter exact amount sent"
+            style={{ width: '100%', background: '#161b22', border: '1px solid #30363d', borderRadius: 10, padding: '13px 14px', color: '#e6edf3', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace' }}
             onFocus={e => e.target.style.borderColor = '#C9A84C'}
             onBlur={e => e.target.style.borderColor = '#30363d'}
           />
         </div>
 
-        <button onClick={handleFund} disabled={!fundAmount} style={{ width: '100%', padding: '13px 0', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', border: 'none', borderRadius: 12, color: '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace', opacity: !fundAmount ? 0.5 : 1 }}>
+        <button onClick={handleFund} disabled={!fundAmount} style={{ width: '100%', padding: '14px 0', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', border: 'none', borderRadius: 12, color: '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace', opacity: !fundAmount ? 0.5 : 1 }}>
           Submit Funding Request →
         </button>
       </div>

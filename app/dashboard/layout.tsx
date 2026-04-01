@@ -136,6 +136,11 @@ useEffect(() => { setMobileOpen(false) }, [pathname])
             style={{ width: '100%', padding: '9px 12px', background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 8, color: '#f85149', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', textAlign: 'left' }}>
             🚪 Sign Out
           </button>
+        <div style={{ padding: '10px 12px', borderTop: '1px solid #161b22' }}>
+  <div style={{ fontSize: 9, color: '#484f58', textAlign: 'center', lineHeight: 1.6 }}>
+    © 2025 CapitalMarket Pro<br />All Rights Reserved
+  </div>
+</div>
         </div>
       </div>
 
