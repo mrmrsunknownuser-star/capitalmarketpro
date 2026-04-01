@@ -24,13 +24,31 @@ export default function AdminSupportPage() {
       const { data: jd } = await supabase.from('users').select('avatar_url').eq('email', 'admin@capitalmarketpro.com').single()
       if (jd?.avatar_url) setJoshuaAvatar(jd.avatar_url)
 
-      const { data } = await supabase
-        .from('support_chats')
-        .select('*, user:users(id, email, full_name, avatar_url)')
-        .order('updated_at', { ascending: false })
+      const { data, error } = await supabase
+  .from('support_chats')
+  .select('*')
+  .order('created_at', { ascending: false })
 
-      setChats(data || [])
-      setLoading(false)
+if (error) console.error('Chats error:', error)
+
+// Fetch user info separately
+if (data && data.length > 0) {
+  const userIds = data.map(c => c.user_id).filter(Boolean)
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, email, full_name, avatar_url')
+    .in('id', userIds)
+
+  const chatsWithUsers = data.map(chat => ({
+    ...chat,
+    user: users?.find(u => u.id === chat.user_id) || null,
+  }))
+  setChats(chatsWithUsers)
+} else {
+  setChats(data || [])
+}
+
+setLoading(false)
     }
     init()
   }, [])
