@@ -19,52 +19,64 @@ export default function RegisterPage() {
   const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong']
   const strengthColor = ['', '#f85149', '#F7A600', '#0052FF', '#3fb950']
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError('')
 
-    if (!fullName.trim()) { setError('Please enter your full name'); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
-    if (password !== confirm) { setError('Passwords do not match'); return }
+  if (!fullName.trim()) { setError('Please enter your full name'); return }
+  if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+  if (password !== confirm) { setError('Passwords do not match'); return }
 
-    setLoading(true)
+  setLoading(true)
 
-    const supabase = createClient()
+  const supabase = createClient()
 
-    // Sign up — trigger will auto-create user profile + balance
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        data: { full_name: fullName.trim() }
-      }
-    })
+  // Step 1 — Sign up with Supabase Auth
+  const { data, error: signUpError } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: { data: { full_name: fullName.trim() } }
+  })
 
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
-      return
-    }
-
-    if (!data.user) {
-      setError('Registration failed. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    // Wait briefly for trigger to run
-    await new Promise(r => setTimeout(r, 1000))
-
-    // Update full_name in case trigger missed it
-    try {
-      await supabase
-        .from('users')
-        .update({ full_name: fullName.trim() })
-        .eq('id', data.user.id)
-    } catch {}
-
-    router.replace('/dashboard')
+  if (signUpError) {
+    setError(signUpError.message)
+    setLoading(false)
+    return
   }
+
+  if (!data.user) {
+    setError('Registration failed. Please try again.')
+    setLoading(false)
+    return
+  }
+
+  // Step 2 — Manually create user profile
+  const { error: userError } = await supabase
+    .from('users')
+    .upsert({
+      id: data.user.id,
+      email: email.trim().toLowerCase(),
+      full_name: fullName.trim(),
+    }, { onConflict: 'id' })
+
+  if (userError) {
+    console.error('User insert error:', userError)
+    // Don't block — user is created in auth, profile might already exist
+  }
+
+  // Step 3 — Create balance record
+  await supabase
+    .from('balances')
+    .upsert({
+      user_id: data.user.id,
+      total_balance: 0,
+      available_balance: 0,
+      trading_balance: 0,
+      total_pnl: 0,
+    }, { onConflict: 'user_id' })
+
+  router.replace('/dashboard')
+}
 
   return (
     <div style={{ minHeight: '100vh', background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', fontFamily: 'monospace' }}>
