@@ -6,11 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
-  { icon: '▦', label: 'Dashboard', href: '/admin/dashboard' },
   { icon: '👥', label: 'Users', href: '/admin/users' },
   { icon: '💰', label: 'Balances', href: '/admin/balances' },
-  { icon: '💳', label: 'Cards', href: '/admin/cards' },
+  { icon: '⬇', label: 'Deposits', href: '/admin/deposits' },
   { icon: '⬆', label: 'Withdrawals', href: '/admin/withdrawals' },
+  { icon: '💳', label: 'Cards', href: '/admin/cards' },
   { icon: '🔔', label: 'Notifications', href: '/admin/notifications' },
   { icon: '💬', label: 'Support', href: '/admin/support' },
   { icon: '📋', label: 'Audit Log', href: '/admin/audit' },

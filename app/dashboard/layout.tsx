@@ -20,6 +20,7 @@ const navItems = [
   { icon: '💬', label: 'Support', href: '/dashboard/support' },
   { icon: '🪪', label: 'Verification', href: '/dashboard/kyc' },
   { icon: '⚙', label: 'Settings', href: '/dashboard/settings' },
+  { icon: 'ℹ', label: 'About Us', href: '/dashboard/about' },
 ]
 
 const TICKER = [
