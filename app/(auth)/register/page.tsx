@@ -84,6 +84,18 @@ const handleRegister = async (e: React.FormEvent) => {
     return
   }
 
+  // Send welcome email
+try {
+  await fetch('/api/email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'welcome',
+      to: email.trim().toLowerCase(),
+      data: { name: fullName.trim() }
+    })
+  })
+} catch {}
   router.replace('/dashboard')
 }
 
