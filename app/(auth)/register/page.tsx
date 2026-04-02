@@ -31,7 +31,10 @@ const handleRegister = async (e: React.FormEvent) => {
 
   const supabase = createClient()
 
-  // Step 1 — Sign up with Supabase Auth
+  // Clear any existing session first
+  await supabase.auth.signOut()
+
+  // Sign up
   const { data, error: signUpError } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
@@ -50,39 +53,36 @@ const handleRegister = async (e: React.FormEvent) => {
     return
   }
 
-  // Step 2 — Manually create user profile
-  const { error: userError } = await supabase
-    .from('users')
-    .upsert({
-      id: data.user.id,
-      email: email.trim().toLowerCase(),
-      full_name: fullName.trim(),
-    }, { onConflict: 'id' })
+  // Wait for trigger
+  await new Promise(r => setTimeout(r, 1500))
 
-  if (userError) {
-    console.error('User insert error:', userError)
-    // Don't block — user is created in auth, profile might already exist
-  }
+  // Upsert user profile
+  await supabase.from('users').upsert({
+    id: data.user.id,
+    email: email.trim().toLowerCase(),
+    full_name: fullName.trim(),
+  }, { onConflict: 'id' })
 
-  // Step 3 — Create balance record
-  await supabase
-    .from('balances')
-    .upsert({
-      user_id: data.user.id,
-      total_balance: 0,
-      available_balance: 0,
-      trading_balance: 0,
-      total_pnl: 0,
-    }, { onConflict: 'user_id' })
-    // Clear any old session first
-  const supabase2 = createClient()
-  await supabase2.auth.signOut()
+  // Upsert balance
+  await supabase.from('balances').upsert({
+    user_id: data.user.id,
+    total_balance: 0,
+    available_balance: 0,
+    trading_balance: 0,
+    total_pnl: 0,
+  }, { onConflict: 'user_id' })
 
-  // Sign in as the new user
-  await supabase2.auth.signInWithPassword({
+  // Sign in immediately as new user
+  const { error: signInError } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
     password,
   })
+
+  if (signInError) {
+    setError('Account created! Please sign in.')
+    router.replace('/login')
+    return
+  }
 
   router.replace('/dashboard')
 }
