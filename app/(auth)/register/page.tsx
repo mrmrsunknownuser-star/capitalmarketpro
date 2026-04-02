@@ -74,6 +74,15 @@ const handleRegister = async (e: React.FormEvent) => {
       trading_balance: 0,
       total_pnl: 0,
     }, { onConflict: 'user_id' })
+    // Clear any old session first
+  const supabase2 = createClient()
+  await supabase2.auth.signOut()
+
+  // Sign in as the new user
+  await supabase2.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  })
 
   router.replace('/dashboard')
 }
