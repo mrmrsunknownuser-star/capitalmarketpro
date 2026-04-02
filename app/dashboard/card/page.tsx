@@ -1,245 +1,502 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function CardPage() {
-  const [tab, setTab] = useState<'virtual' | 'physical'>('virtual')
-  const [applying, setApplying] = useState(false)
-  const [applied, setApplied] = useState(false)
-  const [form, setForm] = useState({ address: '', city: '', country: '', zip: '', phone: '' })
+const VIRTUAL_CARDS = [
+  {
+    id: 'virtual_standard',
+    name: 'Standard Virtual',
+    tier: 'standard',
+    type: 'virtual',
+    price: 150,
+    color: ['#1a1a2e', '#16213e'],
+    accent: '#C9A84C',
+    icon: '💳',
+    cashback: '2%',
+    limit: '$5,000/mo',
+    features: ['Online payments', 'Instant issuance', '2% cashback', 'Freeze/unfreeze', 'Virtual only'],
+  },
+  {
+    id: 'virtual_premium',
+    name: 'Premium Virtual',
+    tier: 'premium',
+    type: 'virtual',
+    price: 500,
+    color: ['#0f0c29', '#302b63'],
+    accent: '#7B2BF9',
+    icon: '💜',
+    cashback: '4%',
+    limit: '$15,000/mo',
+    features: ['All Standard features', '4% cashback', 'Priority support', 'Multi-currency', 'Apple/Google Pay'],
+  },
+  {
+    id: 'virtual_elite',
+    name: 'Elite Virtual',
+    tier: 'elite',
+    type: 'virtual',
+    price: 1000,
+    color: ['#000428', '#004e92'],
+    accent: '#0052FF',
+    icon: '💎',
+    cashback: '5%',
+    limit: '$30,000/mo',
+    features: ['All Premium features', '5% cashback', 'Concierge service', 'Travel insurance', 'Lounge access'],
+  },
+]
 
-  const handleApply = async () => {
-    setApplying(true)
+const PHYSICAL_CARDS = [
+  {
+    id: 'physical_gold',
+    name: 'Gold Card',
+    tier: 'gold',
+    type: 'physical',
+    price: 2500,
+    color: ['#2d1b00', '#5c3600'],
+    accent: '#C9A84C',
+    icon: '🥇',
+    cashback: '5%',
+    limit: '$50,000/mo',
+    features: ['Physical delivery', '5% cashback', 'Global ATM access', 'Travel insurance', 'Concierge 24/7'],
+    delivery: '7-14 business days',
+  },
+  {
+    id: 'physical_titanium',
+    name: 'Titanium Card',
+    tier: 'titanium',
+    type: 'physical',
+    price: 5000,
+    color: ['#1a1a1a', '#2d2d2d'],
+    accent: '#e6edf3',
+    icon: '⬛',
+    cashback: '7%',
+    limit: 'Unlimited',
+    features: ['Metal card', '7% cashback', 'Priority everything', 'Airport lounges worldwide', 'Personal banker'],
+    delivery: '5-10 business days',
+  },
+]
+
+export default function CardPage() {
+  const [myCards, setMyCards] = useState<any[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [applying, setApplying] = useState<string | null>(null)
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+  const [tab, setTab] = useState<'virtual' | 'physical'>('virtual')
+  const [modal, setModal] = useState<any>(null)
+  const [shippingAddr, setShippingAddr] = useState('')
+
+  useEffect(() => {
+    const init = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setUserId(user.id)
+      fetchMyCards(user.id)
+    }
+    init()
+  }, [])
+
+  const fetchMyCards = async (uid: string) => {
+    setLoading(false)
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      title: '💳 Card Application Received',
-      message: tab === 'virtual'
-        ? 'Your virtual card application has been received. Your card will be ready within 24 hours after the activation fee is confirmed.'
-        : 'Your physical card application has been received. Delivery takes 7-14 business days after the card fee is confirmed.',
-      type: 'info',
-    })
-    setApplied(true)
-    setApplying(false)
+    const { data } = await supabase
+      .from('card_applications')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+    setMyCards(data || [])
   }
 
-  const VIRTUAL_CARDS = [
-    {
-      name: 'Standard Virtual Card',
-      fee: '$150',
-      color: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-      accent: '#C9A84C',
-      limit: '$10,000/month',
-      features: ['Instant activation', 'Online payments', 'Apple Pay & Google Pay', 'Real-time notifications', 'Virtual card number', '3D Secure protection'],
-      badge: null,
-    },
-    {
-      name: 'Gold Virtual Card',
-      fee: '$350',
-      color: 'linear-gradient(135deg, #2d1b00, #5c3a00)',
-      accent: '#C9A84C',
-      limit: '$50,000/month',
-      features: ['Priority activation', 'Global online payments', 'Apple Pay & Google Pay', 'Cashback rewards 2%', 'Multiple virtual cards', 'Concierge service', 'Travel insurance'],
-      badge: 'POPULAR',
-    },
-    {
-      name: 'Black Virtual Card',
-      fee: '$750',
-      color: 'linear-gradient(135deg, #0a0a0a, #1a1a1a)',
-      accent: '#e6edf3',
-      limit: 'Unlimited',
-      features: ['Instant VIP activation', 'Global unlimited payments', 'All digital wallets', 'Cashback rewards 5%', 'Unlimited virtual cards', 'Personal concierge 24/7', 'Airport lounge access', 'Premium travel insurance', 'No foreign fees'],
-      badge: 'ELITE',
-    },
-  ]
+  const applyForCard = async () => {
+    if (!modal || !userId) return
+    if (modal.type === 'physical' && !shippingAddr.trim()) {
+      setError('Please enter your shipping address')
+      return
+    }
+    setApplying(modal.id)
 
-  const PHYSICAL_CARDS = [
-    {
-      name: 'Standard Physical Card',
-      fee: '$450',
-      delivery: '$120 shipping',
-      time: '10-14 business days',
-      color: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-      accent: '#C9A84C',
-      limit: '$25,000/month',
-      features: ['Chip & PIN security', 'Contactless payments', 'ATM withdrawals globally', 'Real-time notifications', '2% cashback', 'Fraud protection', 'Card replacement $75'],
-      badge: null,
-    },
-    {
-      name: 'Gold Physical Card',
-      fee: '$850',
-      delivery: '$200 express shipping',
-      time: '5-7 business days',
-      color: 'linear-gradient(135deg, #2d1b00, #5c3a00)',
-      accent: '#C9A84C',
-      limit: '$100,000/month',
-      features: ['Premium metal card', 'Chip & biometric PIN', 'Priority ATM access', 'Real-time alerts', '3% cashback everywhere', 'Full fraud guarantee', 'Free card replacement', 'VIP airport lounges', 'Travel & medical cover'],
-      badge: 'PREMIUM',
-    },
-    {
-      name: 'Titanium Black Card',
-      fee: '$2,500',
-      delivery: '$500 private courier',
-      time: '3-5 business days',
-      color: 'linear-gradient(135deg, #0a0a0a, #1a1a1a)',
-      accent: '#e6edf3',
-      limit: 'Unlimited',
-      features: ['Titanium card (22g)', 'Biometric fingerprint PIN', 'Global ATM unlimited', 'Instant real-time alerts', '7% cashback all spend', 'Zero fraud liability', 'Lifetime free replacement', 'All lounge worldwide', 'Platinum travel cover', 'Personal shopper', 'Private banking access', 'Dedicated relationship manager'],
-      badge: '👑 BLACK',
-    },
-  ]
+    const supabase = createClient()
 
-  const cards = tab === 'virtual' ? VIRTUAL_CARDS : PHYSICAL_CARDS
+    // Check if already applied for this card
+    const existing = myCards.find(c => c.card_id === modal.id)
+    if (existing) {
+      setError(`You already have a ${modal.name} application (${existing.status})`)
+      setApplying(null)
+      setModal(null)
+      return
+    }
+
+    const { error: insertError } = await supabase
+      .from('card_applications')
+      .insert({
+        user_id: userId,
+        card_id: modal.id,
+        card_name: modal.name,
+        card_type: modal.type,
+        card_tier: modal.tier,
+        card_price: modal.price,
+        status: 'pending',
+        shipping_address: modal.type === 'physical' ? shippingAddr : null,
+        cashback: modal.cashback,
+        monthly_limit: modal.limit,
+      })
+
+    if (insertError) {
+      setError('Failed to submit application. Please try again.')
+      setApplying(null)
+      return
+    }
+
+    // Notify admin
+    const { data: adminUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('role', 'admin')
+      .single()
+
+    if (adminUser?.id) {
+      await supabase.from('notifications').insert({
+        user_id: adminUser.id,
+        title: `💳 New ${modal.name} Application`,
+        message: `A user has applied for the ${modal.name} card ($${modal.price} activation fee).`,
+        type: 'info',
+        is_read: false,
+      })
+    }
+
+    // Notify user
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      title: '💳 Card Application Submitted',
+      message: `Your ${modal.name} application has been received and is under review. We'll notify you within 24-48 hours.`,
+      type: 'info',
+      is_read: false,
+    })
+
+    setSuccess(`✅ ${modal.name} application submitted! We'll review within 24-48 hours.`)
+    setApplying(null)
+    setModal(null)
+    setShippingAddr('')
+    fetchMyCards(userId)
+    setTimeout(() => setSuccess(''), 5000)
+  }
+
+  const getCardStatus = (cardId: string) => {
+    return myCards.find(c => c.card_id === cardId)
+  }
+
+  const statusColor = (s: string) => ({
+    pending: '#F7A600', approved: '#3fb950', rejected: '#f85149', active: '#3fb950'
+  }[s] || '#484f58')
+
+  const statusIcon = (s: string) => ({
+    pending: '⏳', approved: '✅', rejected: '❌', active: '🟢'
+  }[s] || '❓')
+
+  const allCards = tab === 'virtual' ? VIRTUAL_CARDS : PHYSICAL_CARDS
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '16px 16px 80px', fontFamily: 'monospace' }}>
+      <style>{`
+        .card-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        @media (max-width: 700px) { .card-grid { grid-template-columns: 1fr !important; } }
+      `}</style>
+
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: '#e6edf3', marginBottom: 6 }}>CapitalMarket Pro Cards</div>
-        <div style={{ fontSize: 13, color: '#8b949e' }}>Premium financial cards designed for serious traders and investors</div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>Pro Cards</div>
+        <div style={{ fontSize: 13, color: '#484f58' }}>VISA-powered cards with up to 7% cashback</div>
       </div>
 
-      {/* Hero banner */}
-      <div style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 16, padding: '28px 28px', marginBottom: 28, display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ position: 'absolute', right: -20, top: -20, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%)' }} />
-        {/* Card mockup */}
-        <div style={{ width: 240, height: 148, borderRadius: 16, background: 'linear-gradient(135deg, #1a1a2e, #16213e)', border: '1px solid rgba(201,168,76,0.4)', padding: 20, position: 'relative', flexShrink: 0, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-            <div>
-              <div style={{ fontSize: 10, color: '#C9A84C', fontWeight: 700, letterSpacing: '0.1em' }}>CAPITALMARKET</div>
-              <div style={{ fontSize: 8, color: '#484f58', letterSpacing: '0.15em' }}>PRO</div>
-            </div>
-            <div style={{ fontSize: 22 }}>💳</div>
-          </div>
-          <div style={{ fontSize: 13, color: '#e6edf3', letterSpacing: '0.15em', marginBottom: 14, fontFamily: 'monospace' }}>
-            •••• •••• •••• 4821
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <div>
-              <div style={{ fontSize: 8, color: '#484f58' }}>CARD HOLDER</div>
-              <div style={{ fontSize: 11, color: '#e6edf3', fontWeight: 600 }}>J. SMITH</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 8, color: '#484f58' }}>EXPIRES</div>
-              <div style={{ fontSize: 11, color: '#e6edf3' }}>12/28</div>
-            </div>
-            <div style={{ fontSize: 20, color: '#C9A84C', fontWeight: 800 }}>VISA</div>
-          </div>
+      {success && (
+        <div style={{ background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#3fb950' }}>
+          {success}
         </div>
+      )}
 
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#e6edf3', marginBottom: 10 }}>
-            Trade. Spend. Earn. <span style={{ color: '#C9A84C' }}>Everywhere.</span>
-          </div>
-          <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.8, marginBottom: 16 }}>
-            The CapitalMarket Pro card is your gateway to spending your crypto and investment returns anywhere in the world. Available in virtual and physical formats with industry-leading cashback rates.
-          </p>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            {['🌍 200+ Countries', '💰 Up to 7% Cashback', '🔒 Instant Freeze', '⚡ Real-time Alerts'].map(f => (
-              <div key={f} style={{ fontSize: 12, color: '#C9A84C', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', padding: '4px 12px', borderRadius: 20 }}>{f}</div>
-            ))}
+      {error && (
+        <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#f85149' }}>
+          ⚠ {error}
+          <button onClick={() => setError('')} style={{ marginLeft: 10, background: 'none', border: 'none', color: '#f85149', cursor: 'pointer', fontSize: 12 }}>✕</button>
+        </div>
+      )}
+
+      {/* My Active Cards */}
+      {myCards.filter(c => c.status === 'approved' || c.status === 'active').length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 14 }}>My Cards</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {myCards.filter(c => c.status === 'approved' || c.status === 'active').map(card => {
+              const cardDef = [...VIRTUAL_CARDS, ...PHYSICAL_CARDS].find(c => c.id === card.card_id)
+              return (
+                <div key={card.id} style={{ background: `linear-gradient(135deg, ${cardDef?.color[0] || '#0d1117'}, ${cardDef?.color[1] || '#161b22'})`, border: `1px solid ${cardDef?.accent || '#C9A84C'}44`, borderRadius: 20, padding: 24, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: `${cardDef?.accent || '#C9A84C'}15` }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: cardDef?.accent || '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>CapitalMarket Pro</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#e6edf3' }}>{card.card_name}</div>
+                    </div>
+                    <div style={{ fontSize: 28 }}>{cardDef?.icon}</div>
+                  </div>
+                  <div style={{ fontSize: 16, color: '#e6edf3', letterSpacing: '0.2em', marginBottom: 16, fontFamily: 'monospace' }}>
+                    •••• •••• •••• {Math.floor(1000 + Math.random() * 9000)}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 9, color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cashback</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: cardDef?.accent || '#C9A84C' }}>{card.cashback}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Limit</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3' }}>{card.monthly_limit}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#3fb950', background: 'rgba(63,185,80,0.15)', border: '1px solid rgba(63,185,80,0.3)', padding: '5px 12px', borderRadius: 20, fontWeight: 700 }}>
+                      🟢 ACTIVE
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Pending applications */}
+      {myCards.filter(c => c.status === 'pending' || c.status === 'rejected').length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 12 }}>Applications</div>
+          {myCards.filter(c => c.status === 'pending' || c.status === 'rejected').map(card => (
+            <div key={card.id} style={{ background: '#0d1117', border: `1px solid ${statusColor(card.status)}33`, borderRadius: 12, padding: '14px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 24 }}>{[...VIRTUAL_CARDS, ...PHYSICAL_CARDS].find(c => c.id === card.card_id)?.icon || '💳'}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>{card.card_name}</div>
+                  <div style={{ fontSize: 11, color: '#484f58' }}>Applied {new Date(card.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: statusColor(card.status), background: `${statusColor(card.status)}15`, border: `1px solid ${statusColor(card.status)}33`, padding: '4px 12px', borderRadius: 20 }}>
+                {statusIcon(card.status)} {card.status.toUpperCase()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#0d1117', border: '1px solid #161b22', borderRadius: 10, padding: 4, width: 'fit-content' }}>
-        {[{ id: 'virtual', label: '💳 Virtual Card' }, { id: 'physical', label: '🏦 Physical Card' }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ padding: '9px 22px', borderRadius: 8, border: 'none', background: tab === t.id ? 'rgba(201,168,76,0.15)' : 'transparent', color: tab === t.id ? '#C9A84C' : '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: tab === t.id ? 700 : 400 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 4 }}>
+        {[{ id: 'virtual', label: '💳 Virtual Cards' }, { id: 'physical', label: '📦 Physical Cards' }].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id as any)}
+            style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', background: tab === t.id ? 'rgba(201,168,76,0.15)' : 'transparent', color: tab === t.id ? '#C9A84C' : '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: tab === t.id ? 700 : 400 }}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {tab === 'physical' && (
-        <div style={{ background: 'rgba(248,81,73,0.06)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: '#f85149', lineHeight: 1.6 }}>
-            ⚠ Physical cards require KYC verification. Shipping fees are non-refundable. International shipping includes customs duties where applicable. Delivery times are estimates and may vary.
-          </div>
-        </div>
-      )}
+      {/* Cards Grid */}
+      <div className="card-grid">
+        {allCards.map(card => {
+          const application = getCardStatus(card.id)
+          const isActive = application?.status === 'approved' || application?.status === 'active'
+          const isPending = application?.status === 'pending'
+          const isRejected = application?.status === 'rejected'
 
-      {/* Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-        {cards.map((card: any) => (
-          <div key={card.name} style={{ background: '#0d1117', border: '1px solid #21262d', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
-            {card.badge && (
-              <div style={{ position: 'absolute', top: 14, right: 14, background: card.accent === '#e6edf3' ? '#1a1a1a' : 'rgba(201,168,76,0.2)', border: `1px solid ${card.accent}44`, color: card.accent, fontSize: 9, fontWeight: 800, padding: '3px 10px', borderRadius: 20, letterSpacing: '0.08em' }}>
-                {card.badge}
-              </div>
-            )}
-
-            {/* Card visual */}
-            <div style={{ background: card.color, padding: '24px 20px 20px', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', bottom: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
-              <div style={{ position: 'absolute', bottom: 10, right: 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
-              <div style={{ fontSize: 10, color: card.accent, fontWeight: 700, letterSpacing: '0.12em', marginBottom: 16 }}>CAPITALMARKET PRO</div>
-              <div style={{ fontSize: 13, color: '#8b949e', letterSpacing: '0.15em', marginBottom: 16, fontFamily: 'monospace' }}>•••• •••• •••• ••••</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div style={{ fontSize: 10, color: '#484f58' }}>CARD HOLDER NAME</div>
-                <div style={{ fontSize: 16, color: card.accent, fontWeight: 800 }}>VISA</div>
-              </div>
-            </div>
-
-            <div style={{ padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 6 }}>{card.name}</div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: card.accent }}>{card.fee}</div>
-                <div style={{ fontSize: 11, color: '#484f58' }}>activation fee</div>
-              </div>
-
-              {tab === 'physical' && (
-                <div style={{ background: '#161b22', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#8b949e', marginBottom: 2 }}>📦 {(card as any).delivery}</div>
-                  <div style={{ fontSize: 10, color: '#484f58' }}>⏱ {(card as any).time}</div>
-                </div>
-              )}
-
-              <div style={{ background: `${card.accent}0d`, border: `1px solid ${card.accent}22`, borderRadius: 8, padding: '8px 12px', marginBottom: 14 }}>
-                <div style={{ fontSize: 10, color: '#484f58', marginBottom: 2 }}>MONTHLY LIMIT</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: card.accent }}>{card.limit}</div>
-              </div>
-
-              <div style={{ marginBottom: 18 }}>
-                {card.features.map((f: string, i: number) => (
-                  <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 6, fontSize: 11, color: '#8b949e' }}>
-                    <span style={{ color: card.accent, flexShrink: 0 }}>✓</span>{f}
+          return (
+            <div key={card.id} style={{ background: `linear-gradient(135deg, ${card.color[0]}, ${card.color[1]})`, border: `1px solid ${card.accent}33`, borderRadius: 20, overflow: 'hidden', position: 'relative' }}>
+              {/* Card Visual */}
+              <div style={{ padding: '20px 20px 16px', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: `${card.accent}12` }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 9, color: card.accent, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 3 }}>CapitalMarket Pro</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3' }}>{card.name}</div>
                   </div>
-                ))}
+                  <div style={{ fontSize: 26 }}>{card.icon}</div>
+                </div>
+                <div style={{ fontSize: 13, color: '#8b949e', letterSpacing: '0.18em', marginBottom: 14 }}>
+                  •••• •••• •••• ••••
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cashback</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: card.accent }}>{card.cashback}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Monthly Limit</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>{card.limit}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 8, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Type</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#8b949e', textTransform: 'capitalize' }}>{card.type}</div>
+                  </div>
+                </div>
               </div>
 
-              <button
-                onClick={handleApply}
-                disabled={applying || applied}
-                style={{ width: '100%', padding: '11px 0', borderRadius: 10, border: `1px solid ${card.accent}`, background: `${card.accent}0d`, color: card.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace', opacity: applied ? 0.6 : 1 }}>
-                {applied ? '✓ Application Sent' : applying ? 'Processing...' : `Apply — ${card.fee}`}
-              </button>
+              {/* Card Details */}
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 20px' }}>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>Features:</div>
+                  {card.features.map((f, i) => (
+                    <div key={i} style={{ fontSize: 11, color: '#8b949e', marginBottom: 4, display: 'flex', gap: 6 }}>
+                      <span style={{ color: card.accent }}>✓</span>{f}
+                    </div>
+                  ))}
+                  {(card as any).delivery && (
+                    <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>📦 Delivery: {(card as any).delivery}</div>
+                  )}
+                </div>
+
+                {/* Activation fee */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span style={{ fontSize: 11, color: '#8b949e' }}>Activation Fee</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: card.accent }}>${card.price.toLocaleString()}</span>
+                </div>
+
+                {/* Status / Apply button */}
+                {isActive ? (
+                  <div style={{ width: '100%', padding: '11px 0', background: 'rgba(63,185,80,0.15)', border: '1px solid rgba(63,185,80,0.3)', borderRadius: 12, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#3fb950' }}>
+                    🟢 ACTIVE
+                  </div>
+                ) : isPending ? (
+                  <div style={{ width: '100%', padding: '11px 0', background: 'rgba(247,166,0,0.1)', border: '1px solid rgba(247,166,0,0.3)', borderRadius: 12, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#F7A600' }}>
+                    ⏳ PENDING REVIEW
+                  </div>
+                ) : isRejected ? (
+                  <button onClick={() => setModal(card)}
+                    style={{ width: '100%', padding: '11px 0', background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 12, fontSize: 12, fontWeight: 700, color: '#f85149', cursor: 'pointer', fontFamily: 'monospace' }}>
+                    ❌ REJECTED — Reapply
+                  </button>
+                ) : (
+                  <button onClick={() => setModal(card)}
+                    style={{ width: '100%', padding: '11px 0', background: `linear-gradient(135deg, ${card.accent}, ${card.accent}cc)`, border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 800, color: card.accent === '#e6edf3' ? '#060a0f' : '#fff', cursor: 'pointer', fontFamily: 'monospace' }}>
+                    Apply for this Card →
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Why get a card */}
-      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 24 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 18 }}>Why get a CapitalMarket Pro Card?</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      {/* Benefits section */}
+      <div style={{ marginTop: 28, background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 16 }}>💳 Why CapitalMarket Pro Cards?</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
           {[
-            { icon: '💸', title: 'Spend Your Profits', desc: 'Convert and spend your trading returns instantly at millions of merchants worldwide' },
-            { icon: '🌍', title: 'Global Acceptance', desc: 'Use anywhere VISA is accepted — 200+ countries, 46M+ merchants' },
-            { icon: '💰', title: 'Earn While Spending', desc: 'Up to 7% cashback on every transaction, automatically added to your account' },
-            { icon: '🔒', title: 'Zero Fraud Liability', desc: 'Complete protection against unauthorized transactions with instant freeze capability' },
-          ].map(item => (
-            <div key={item.title} style={{ background: '#161b22', borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 6 }}>{item.title}</div>
-              <div style={{ fontSize: 11, color: '#484f58', lineHeight: 1.6 }}>{item.desc}</div>
+            { icon: '💸', title: 'Up to 7% Cashback', desc: 'Earn on every purchase worldwide' },
+            { icon: '🔒', title: 'Freeze Instantly', desc: 'Lock your card with one tap' },
+            { icon: '🌍', title: 'Global Acceptance', desc: 'Use anywhere VISA is accepted' },
+            { icon: '⚡', title: 'Instant Notifications', desc: 'Real-time alerts on every transaction' },
+          ].map(b => (
+            <div key={b.title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 20, flexShrink: 0 }}>{b.icon}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>{b.title}</div>
+                <div style={{ fontSize: 11, color: '#484f58' }}>{b.desc}</div>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Footer */}
+      <div style={{ marginTop: 24, textAlign: 'center', padding: '16px 0', borderTop: '1px solid #161b22' }}>
+        <div style={{ fontSize: 10, color: '#484f58' }}>© 2025 CapitalMarket Pro · All Rights Reserved</div>
+      </div>
+
+      {/* Application Modal */}
+      {modal && (
+        <div onClick={e => { if (e.target === e.currentTarget) { setModal(null); setShippingAddr('') } }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ background: '#0d1117', border: '1px solid #21262d', borderRadius: 20, width: '100%', maxWidth: 440, fontFamily: 'monospace', overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' }}>
+
+            {/* Modal header */}
+            <div style={{ background: `linear-gradient(135deg, ${modal.color[0]}, ${modal.color[1]})`, padding: '24px 24px 20px', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: -10, right: -10, width: 80, height: 80, borderRadius: '50%', background: `${modal.accent}15` }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: modal.accent, letterSpacing: '0.15em', marginBottom: 4 }}>CAPITALMARKET PRO</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#e6edf3' }}>{modal.name}</div>
+                  <div style={{ fontSize: 12, color: '#8b949e', marginTop: 4 }}>{modal.cashback} cashback · {modal.limit}</div>
+                </div>
+                <div style={{ fontSize: 32 }}>{modal.icon}</div>
+              </div>
+            </div>
+
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 16 }}>Card Application</div>
+
+              {/* Features */}
+              <div style={{ background: '#161b22', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                {modal.features.map((f: string, i: number) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12, color: '#8b949e' }}>
+                    <span style={{ color: modal.accent }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+
+              {/* Physical card shipping */}
+              {modal.type === 'physical' && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    📦 Shipping Address *
+                  </label>
+                  <textarea
+                    value={shippingAddr}
+                    onChange={e => setShippingAddr(e.target.value)}
+                    placeholder="Enter your full shipping address including city, state, zip code, country..."
+                    rows={3}
+                    style={{ width: '100%', background: '#161b22', border: '1px solid #30363d', borderRadius: 10, padding: '12px 14px', color: '#e6edf3', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace', resize: 'none', lineHeight: 1.6 }}
+                    onFocus={e => e.target.style.borderColor = modal.accent}
+                    onBlur={e => e.target.style.borderColor = '#30363d'}
+                  />
+                  <div style={{ fontSize: 10, color: '#484f58', marginTop: 4 }}>Delivery: {modal.delivery}</div>
+                </div>
+              )}
+
+              {/* Fee */}
+              <div style={{ background: `${modal.accent}0d`, border: `1px solid ${modal.accent}33`, borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: '#8b949e' }}>One-time activation fee</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: modal.accent }}>${modal.price.toLocaleString()}</span>
+                </div>
+                <div style={{ fontSize: 11, color: '#484f58', marginTop: 4 }}>
+                  Fee will be deducted from your account balance upon approval
+                </div>
+              </div>
+
+              {/* Process info */}
+              <div style={{ marginBottom: 20 }}>
+                {[
+                  { s: '1', t: 'Submit application', c: '#C9A84C' },
+                  { s: '2', t: 'Admin reviews (24-48hrs)', c: '#8b949e' },
+                  { s: '3', t: 'Card activated on approval', c: '#8b949e' },
+                  { s: '4', t: modal.type === 'physical' ? 'Physical card shipped to you' : 'Use immediately online', c: '#8b949e' },
+                ].map((step, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: `${step.c}22`, border: `1px solid ${step.c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: step.c, flexShrink: 0 }}>{step.s}</div>
+                    <span style={{ fontSize: 12, color: step.c }}>{step.t}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
+                <button onClick={() => { setModal(null); setShippingAddr('') }}
+                  style={{ padding: '13px 0', borderRadius: 12, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 13, cursor: 'pointer', fontFamily: 'monospace' }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={applyForCard}
+                  disabled={applying === modal.id || (modal.type === 'physical' && !shippingAddr.trim())}
+                  style={{ padding: '13px 0', background: applying === modal.id ? '#161b22' : `linear-gradient(135deg, ${modal.accent}, ${modal.accent}cc)`, border: 'none', borderRadius: 12, color: applying === modal.id ? '#484f58' : modal.accent === '#e6edf3' ? '#060a0f' : '#fff', fontSize: 13, fontWeight: 800, cursor: applying === modal.id ? 'not-allowed' : 'pointer', fontFamily: 'monospace' }}>
+                  {applying === modal.id ? '⟳ Submitting...' : 'Submit Application →'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
