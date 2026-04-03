@@ -59,7 +59,7 @@ function PurchaseModal({ modal, onClose }: { modal: ModalData; onClose: () => vo
           <button onClick={onClose} style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, color: '#8b949e', cursor: 'pointer', width: 30, height: 30, fontSize: 14 }}>✕</button>
         </div>
 
-        {/* Steps */}
+        {/* Steps indicator */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 22 }}>
           {[{ n: 1, l: 'Notice' }, { n: 2, l: 'Provider' }, { n: 3, l: 'Send BTC' }].map((s, i) => (
             <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : 0 }}>
@@ -146,9 +146,11 @@ export default function DashboardHome() {
   const [profileName, setProfileName] = useState('Trader')
   const [balance, setBalance] = useState<any>(null)
   const [kycStatus, setKycStatus] = useState('none')
+  const [loaded, setLoaded] = useState(false)
   const [modal, setModal] = useState<ModalData>(null)
   const [hideBalance, setHideBalance] = useState(false)
   const [joshuaPhoto, setJoshuaPhoto] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState(0)
   const [liveAssets, setLiveAssets] = useState([
     { name: 'Bitcoin', symbol: 'BTC', icon: '₿', color: '#F7A600', price: 67240, change: 2.4 },
     { name: 'Ethereum', symbol: 'ETH', icon: 'Ξ', color: '#627EEA', price: 3480, change: 1.8 },
@@ -157,7 +159,6 @@ export default function DashboardHome() {
     { name: 'XRP', symbol: 'XRP', icon: '✕', color: '#346AA9', price: 0.624, change: 4.1 },
     { name: 'ADA', symbol: 'ADA', icon: '◆', color: '#0033AD', price: 0.482, change: 2.8 },
   ])
-  const [activeTab, setActiveTab] = useState(0)
   const channelRef = useRef<any>(null)
 
   useEffect(() => {
@@ -166,21 +167,18 @@ export default function DashboardHome() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Fetch profile
       const { data: profile } = await supabase
         .from('users')
         .select('full_name, kyc_status')
         .eq('id', user.id)
         .single()
 
-      // Fetch balance
       const { data: bal } = await supabase
         .from('balances')
         .select('*')
         .eq('user_id', user.id)
         .single()
 
-      // Fetch Joshua photo
       const { data: jd } = await supabase
         .from('users')
         .select('avatar_url')
@@ -194,7 +192,10 @@ export default function DashboardHome() {
       const name = profile?.full_name || user?.user_metadata?.full_name || ''
       setProfileName(name ? name.split(' ')[0] : user.email?.split('@')[0] || 'Trader')
 
-      // ── REALTIME: Balance updates ──
+      // Mark as fully loaded — no more flicker
+      setLoaded(true)
+
+      // Realtime balance updates
       channelRef.current = supabase
         .channel(`home-balance-${user.id}`)
         .on('postgres_changes', {
@@ -207,7 +208,7 @@ export default function DashboardHome() {
         })
         .subscribe()
 
-      // ── REALTIME: KYC / profile updates ──
+      // Realtime KYC updates
       supabase
         .channel(`home-profile-${user.id}`)
         .on('postgres_changes', {
@@ -225,7 +226,6 @@ export default function DashboardHome() {
 
     init()
 
-    // Live price updates
     const priceInterval = setInterval(() => {
       setLiveAssets(prev => prev.map(a => ({
         ...a,
@@ -259,14 +259,15 @@ export default function DashboardHome() {
       `}</style>
 
       {/* ── PORTFOLIO HEADER ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)', borderRadius: 20, padding: '24px 20px', marginBottom: 20, border: '1px solid rgba(201,168,76,0.2)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ background: 'linear-gradient(135deg,#0d1117,#161b22)', borderRadius: 20, padding: '24px 20px', marginBottom: 20, border: '1px solid rgba(201,168,76,0.2)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle,rgba(201,168,76,0.08) 0%,transparent 70%)', pointerEvents: 'none' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: '#8b949e' }}>
             Welcome back, <span style={{ color: '#C9A84C', fontWeight: 700 }}>{profileName}</span> 👋
           </div>
-          <button onClick={() => setHideBalance(!hideBalance)} style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={() => setHideBalance(!hideBalance)}
+            style={{ background: 'none', border: 'none', color: '#484f58', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
             {hideBalance ? '👁 Show' : '🙈 Hide'}
           </button>
         </div>
@@ -292,7 +293,8 @@ export default function DashboardHome() {
             { icon: '🔄', label: 'Trade', href: '/dashboard/trade', color: '#0052FF' },
             { icon: '📊', label: 'Market', href: '/dashboard/market', color: '#C9A84C' },
           ].map(action => (
-            <Link key={action.label} href={action.href} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <Link key={action.label} href={action.href}
+              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: `${action.color}18`, border: `1px solid ${action.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                 {action.icon}
               </div>
@@ -302,15 +304,17 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* KYC Banner */}
-      {kycStatus !== 'approved' && (
+      {/* KYC Banner — only shows AFTER data is loaded */}
+      {loaded && kycStatus !== 'approved' && (
         <div style={{ background: 'rgba(248,81,73,0.06)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#f85149', marginBottom: 2 }}>🪪 Complete Identity Verification</div>
             <div style={{ fontSize: 11, color: '#8b949e' }}>Unlock withdrawals and full platform access</div>
           </div>
           <Link href="/dashboard/kyc">
-            <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #f85149', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>Verify Now →</button>
+            <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #f85149', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+              Verify Now →
+            </button>
           </Link>
         </div>
       )}
@@ -358,7 +362,7 @@ export default function DashboardHome() {
         )}
 
         {activeTab === 1 && (
-          <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 24, textAlign: 'center' }}>
+          <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 28, textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>💼</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#e6edf3', marginBottom: 8 }}>No Wallets Connected</div>
             <div style={{ fontSize: 12, color: '#8b949e', marginBottom: 16 }}>Deposit funds to get started</div>
@@ -372,7 +376,7 @@ export default function DashboardHome() {
       </div>
 
       {/* ── AI BANNER ── */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 14, padding: '18px 20px', marginBottom: 28, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 14, padding: '18px 20px', marginBottom: 28, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ fontSize: 32 }}>🤖</div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#C9A84C', marginBottom: 4 }}>AI Trading System — Active 24/7</div>
@@ -400,7 +404,7 @@ export default function DashboardHome() {
                 <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#C9A84C', color: '#060a0f', fontSize: 8, fontWeight: 800, padding: '2px 8px', borderRadius: 20, whiteSpace: 'nowrap' }}>⭐ POPULAR</div>
               )}
               <div style={{ fontSize: 11, fontWeight: 800, color: plan.color, textTransform: 'uppercase', marginBottom: 10 }}>{plan.icon} {plan.name}</div>
-              <div style={{ background: `${plan.color}18`, borderRadius: 8, padding: '10px', textAlign: 'center', marginBottom: 10 }}>
+              <div style={{ background: `${plan.color}18`, borderRadius: 8, padding: 10, textAlign: 'center', marginBottom: 10 }}>
                 <div style={{ fontSize: 26, fontWeight: 800, color: plan.color, lineHeight: 1 }}>{plan.roi}</div>
                 <div style={{ fontSize: 9, color: '#8b949e', marginTop: 3 }}>Daily · {plan.total} Total</div>
               </div>
@@ -475,8 +479,8 @@ export default function DashboardHome() {
       {/* ── ACCOUNT MANAGER ── */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 14 }}>👤 Your Account Manager</div>
-        <div style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ background: 'linear-gradient(135deg,#0d1117,#161b22)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 16, padding: 20, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#060a0f', border: '3px solid rgba(201,168,76,0.4)', overflow: 'hidden' }}>
@@ -491,7 +495,7 @@ export default function DashboardHome() {
               </div>
               <div style={{ fontSize: 11, color: '#C9A84C', fontWeight: 600, marginBottom: 8 }}>Account Manager · Senior Portfolio Manager</div>
               <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.8, marginBottom: 12 }}>
-                Former Goldman Sachs VP with <strong style={{ color: '#e6edf3' }}>14+ years</strong> managing over <strong style={{ color: '#C9A84C' }}>$2.4B</strong> in assets. Your dedicated guide to maximizing returns.
+                Former Goldman Sachs VP with <strong style={{ color: '#e6edf3' }}>14+ years</strong> managing over <strong style={{ color: '#C9A84C' }}>$2.4B</strong> in assets.
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                 {['✓ CFA Certified', '✓ Goldman Sachs', '✓ SEC Registered'].map(c => (

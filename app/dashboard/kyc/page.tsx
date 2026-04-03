@@ -133,12 +133,17 @@ export default function KYCPage() {
   }
 
   if (loading) {
-    return (
-      <div style={{ padding: 40, textAlign: 'center', fontFamily: 'monospace' }}>
-        <div style={{ fontSize: 13, color: '#484f58' }}>Loading verification status...</div>
+  return (
+    <div style={{ padding: '24px 16px', fontFamily: 'monospace', maxWidth: 560, margin: '0 auto' }}>
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 20, padding: 40, textAlign: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#161b22', margin: '0 auto 16px', animation: 'pulse 1.5s ease infinite' }} />
+        <div style={{ height: 16, background: '#161b22', borderRadius: 8, width: '60%', margin: '0 auto 10px' }} />
+        <div style={{ height: 12, background: '#161b22', borderRadius: 8, width: '40%', margin: '0 auto' }} />
+        <style>{`@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }`}</style>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   // ── APPROVED ──
   if (kycStatus === 'approved') {
