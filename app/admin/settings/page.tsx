@@ -1,95 +1,111 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AdminSettingsPage() {
-  const [admin, setAdmin] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-  const [joshuaPhoto, setJoshuaPhoto] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  // Platform config
-  const [btcAddress, setBtcAddress] = useState('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')
-  const [siteName, setSiteName] = useState('CapitalMarket Pro')
+  // Platform settings
+  const [btcAddress, setBtcAddress] = useState('')
+  const [ethAddress, setEthAddress] = useState('')
+  const [usdtAddress, setUsdtAddress] = useState('')
+  const [bnbAddress, setBnbAddress] = useState('')
+  const [platformName, setPlatformName] = useState('CapitalMarket Pro')
+  const [supportEmail, setSupportEmail] = useState('support@capitalmarket-pro.com')
+  const [withdrawalFee, setWithdrawalFee] = useState('5')
   const [minDeposit, setMinDeposit] = useState('100')
-  const [withdrawFee, setWithdrawFee] = useState('5')
-
-  // Crypto addresses for manual trading
-  const [cryptoAddrs, setCryptoAddrs] = useState({
-    BTC: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    ETH: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fA32',
-    USDT: 'TXkz2rQLJm7TFb1qJJHvxBEaJiFzPGx8Gq',
-    BNB: 'bnb1grpf0955h0ykzq3ar5nmum7y6gdfl6lxfn46h2',
-  })
+  const [minWithdrawal, setMinWithdrawal] = useState('100')
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [joshuaPhoto, setJoshuaPhoto] = useState<string | null>(null)
+  const [joshuaPhotoPreview, setJoshuaPhotoPreview] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setAdmin(user)
-
-      // Get Joshua's photo
-      const { data: joshuaData } = await supabase
-        .from('users')
-        .select('avatar_url')
-        .eq('email', 'admin@capitalmarketpro.com')
-        .single()
-      if (joshuaData?.avatar_url) setJoshuaPhoto(joshuaData.avatar_url)
-
-      // Get saved crypto addresses
-      const { data: addrData } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'crypto_addresses')
-        .single()
-      if (addrData?.value) setCryptoAddrs(addrData.value)
-
-      // Get other settings
-      const { data: settingsData } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'general')
-        .single()
-      if (settingsData?.value) {
-        setBtcAddress(settingsData.value.btcAddress || btcAddress)
-        setSiteName(settingsData.value.siteName || siteName)
-        setMinDeposit(settingsData.value.minDeposit || minDeposit)
-        setWithdrawFee(settingsData.value.withdrawFee || withdrawFee)
+      const { data: cryptoAddr } = await supabase.from('platform_settings').select('value').eq('key', 'crypto_addresses').single()
+      if (cryptoAddr?.value) {
+        setBtcAddress(cryptoAddr.value.BTC || '')
+        setEthAddress(cryptoAddr.value.ETH || '')
+        setUsdtAddress(cryptoAddr.value.USDT || '')
+        setBnbAddress(cryptoAddr.value.BNB || '')
       }
+      const { data: general } = await supabase.from('platform_settings').select('value').eq('key', 'general').single()
+      if (general?.value) {
+        setPlatformName(general.value.platformName || 'CapitalMarket Pro')
+        setSupportEmail(general.value.supportEmail || 'support@capitalmarket-pro.com')
+        setWithdrawalFee(general.value.withdrawalFee?.toString() || '5')
+        setMinDeposit(general.value.minDeposit?.toString() || '100')
+        setMinWithdrawal(general.value.minWithdrawal?.toString() || '100')
+        setMaintenanceMode(general.value.maintenanceMode || false)
+      }
+      const { data: adminUser } = await supabase.from('users').select('avatar_url').eq('role', 'admin').single()
+      if (adminUser?.avatar_url) {
+        setJoshuaPhoto(adminUser.avatar_url)
+        setJoshuaPhotoPreview(adminUser.avatar_url)
+      }
+      setLoading(false)
     }
     init()
   }, [])
 
-  const save = async () => {
-    setLoading(true)
+  const saveCryptoAddresses = async () => {
+    setSaving(true)
     const supabase = createClient()
-
-    // Save general settings
-    await supabase.from('platform_settings').upsert({
-      key: 'general',
-      value: { btcAddress, siteName, minDeposit, withdrawFee },
-      updated_at: new Date().toISOString(),
-    })
-
-    // Save crypto addresses
     await supabase.from('platform_settings').upsert({
       key: 'crypto_addresses',
-      value: cryptoAddrs,
-      updated_at: new Date().toISOString(),
-    })
-
-    // Log action
-    try {
-      await supabase.from('audit_logs').insert({
-        action: 'PLATFORM_SETTINGS_UPDATED',
-        details: { btcAddress, siteName, minDeposit, withdrawFee, cryptoAddrs },
-      })
-    } catch {}
-
-    setMessage('Settings saved successfully!')
+      value: { BTC: btcAddress, ETH: ethAddress, USDT: usdtAddress, BNB: bnbAddress },
+    }, { onConflict: 'key' })
+    setMessage('✅ Crypto addresses saved!')
+    setSaving(false)
     setTimeout(() => setMessage(''), 3000)
-    setLoading(false)
+  }
+
+  const saveGeneralSettings = async () => {
+    setSaving(true)
+    const supabase = createClient()
+    await supabase.from('platform_settings').upsert({
+      key: 'general',
+      value: {
+        platformName,
+        supportEmail,
+        withdrawalFee: parseFloat(withdrawalFee),
+        minDeposit: parseFloat(minDeposit),
+        minWithdrawal: parseFloat(minWithdrawal),
+        maintenanceMode,
+        btcAddress,
+      },
+    }, { onConflict: 'key' })
+    setMessage('✅ General settings saved!')
+    setSaving(false)
+    setTimeout(() => setMessage(''), 3000)
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { setError('Image must be under 2MB'); return }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result as string
+      setJoshuaPhotoPreview(base64)
+      setJoshuaPhoto(base64)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const saveJoshuaPhoto = async () => {
+    if (!joshuaPhoto) return
+    setSaving(true)
+    const supabase = createClient()
+    await supabase.from('users').update({ avatar_url: joshuaPhoto }).eq('role', 'admin')
+    setMessage('✅ Joshua photo updated!')
+    setSaving(false)
+    setTimeout(() => setMessage(''), 3000)
   }
 
   const inputStyle: React.CSSProperties = {
@@ -103,231 +119,137 @@ export default function AdminSettingsPage() {
     outline: 'none',
     boxSizing: 'border-box',
     fontFamily: 'monospace',
-    transition: 'border-color 0.15s',
   }
 
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: 11,
-    color: '#8b949e',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-  }
-
-  const sectionStyle: React.CSSProperties = {
-    background: '#0d1117',
-    border: '1px solid #161b22',
-    borderRadius: 14,
-    padding: 24,
-    marginBottom: 20,
-  }
+  if (loading) return (
+    <div style={{ padding: 40, textAlign: 'center', color: '#484f58', fontFamily: 'monospace' }}>Loading settings...</div>
+  )
 
   return (
-    <div style={{ padding: 24, maxWidth: 700, fontFamily: 'monospace' }}>
-
-      {/* Header */}
+    <div style={{ padding: 20, fontFamily: 'monospace', maxWidth: 700 }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>Platform Settings</div>
-        <div style={{ fontSize: 13, color: '#484f58' }}>Configure platform-wide settings and crypto addresses</div>
+        <div style={{ fontSize: 13, color: '#484f58' }}>Configure platform settings and crypto addresses</div>
       </div>
 
-      {/* Success message */}
-      {message && (
-        <div style={{ background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#3fb950' }}>
-          ✅ {message}
-        </div>
-      )}
+      {message && <div style={{ background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#3fb950' }}>{message}</div>}
+      {error && <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#f85149', display: 'flex', justifyContent: 'space-between' }}><span>⚠ {error}</span><button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#f85149', cursor: 'pointer' }}>✕</button></div>}
 
-      {/* Admin Account Info */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 16 }}>👤 Admin Account</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div style={{ background: '#161b22', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 10, color: '#484f58', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Admin Email</div>
-            <div style={{ fontSize: 13, color: '#C9A84C' }}>{admin?.email || 'Loading...'}</div>
-          </div>
-          <div style={{ background: '#161b22', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ fontSize: 10, color: '#484f58', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Role</div>
-            <div style={{ fontSize: 13, color: '#f85149', fontWeight: 700 }}>🔴 Super Admin</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Joshua Elder Photo */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 4 }}>👤 Joshua C. Elder — Account Manager Photo</div>
-        <div style={{ fontSize: 11, color: '#484f58', marginBottom: 16 }}>This photo appears on the user dashboard and support chat</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Avatar preview */}
-          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#060a0f', overflow: 'hidden', border: '3px solid rgba(201,168,76,0.4)', flexShrink: 0 }}>
-            {joshuaPhoto ? (
-              <img src={joshuaPhoto} alt="Joshua" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : 'JE'}
-          </div>
-          <div style={{ flex: 1 }}>
-            <input
-              type="file"
-              accept="image/*"
-              id="joshua-photo-input"
-              style={{ display: 'none' }}
-              onChange={async e => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const reader = new FileReader()
-                reader.onload = async ev => {
-                  const base64 = ev.target?.result as string
-                  setJoshuaPhoto(base64)
-                  const supabase = createClient()
-                  await supabase.from('users').update({ avatar_url: base64 }).eq('email', 'admin@capitalmarketpro.com')
-                  setMessage("Joshua's photo updated successfully!")
-                  setTimeout(() => setMessage(''), 3000)
-                }
-                reader.readAsDataURL(file)
-              }}
-            />
-            <label htmlFor="joshua-photo-input" style={{ display: 'inline-block', padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: 700 }}>
-              📷 {joshuaPhoto ? 'Change Photo' : 'Upload Photo'}
-            </label>
-            <div style={{ fontSize: 11, color: '#484f58', marginTop: 8, lineHeight: 1.6 }}>
-              JPG, PNG or WEBP · Max 2MB<br />
-              Shows on user dashboard, support chat, and admin panel
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Platform Config */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 20 }}>⚙️ Platform Configuration</div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Platform Name</label>
-          <input
-            value={siteName}
-            onChange={e => setSiteName(e.target.value)}
-            style={inputStyle}
-            onFocus={e => e.target.style.borderColor = '#C9A84C'}
-            onBlur={e => e.target.style.borderColor = '#30363d'}
-          />
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>₿ Master BTC Deposit Address</label>
-          <input
-            value={btcAddress}
-            onChange={e => setBtcAddress(e.target.value)}
-            style={{ ...inputStyle, color: '#C9A84C' }}
-            onFocus={e => e.target.style.borderColor = '#C9A84C'}
-            onBlur={e => e.target.style.borderColor = '#30363d'}
-          />
-          <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>Shown to all users on the Deposit page</div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div>
-            <label style={labelStyle}>Minimum Deposit ($)</label>
-            <input
-              type="number"
-              value={minDeposit}
-              onChange={e => setMinDeposit(e.target.value)}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#C9A84C'}
-              onBlur={e => e.target.style.borderColor = '#30363d'}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Withdrawal Fee (%)</label>
-            <input
-              type="number"
-              value={withdrawFee}
-              onChange={e => setWithdrawFee(e.target.value)}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#C9A84C'}
-              onBlur={e => e.target.style.borderColor = '#30363d'}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Crypto Addresses for Manual Trading */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 4 }}>₿ Manual Trading Crypto Addresses</div>
-        <div style={{ fontSize: 11, color: '#484f58', marginBottom: 18 }}>
-          These addresses appear on the Manual Trading fund page. Users will send crypto to these addresses.
-        </div>
+      {/* Crypto Addresses */}
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22, marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>₿ Crypto Deposit Addresses</div>
+        <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>These addresses are shown to users when depositing funds</div>
 
         {[
-          { coin: 'BTC', label: 'Bitcoin (BTC) — Preferred', color: '#F7A600', placeholder: 'bc1q...' },
-          { coin: 'ETH', label: 'Ethereum (ETH)', color: '#627EEA', placeholder: '0x...' },
-          { coin: 'USDT', label: 'USDT (TRC20)', color: '#26A17B', placeholder: 'T...' },
-          { coin: 'BNB', label: 'BNB (BEP20)', color: '#F7A600', placeholder: 'bnb1...' },
-        ].map(addr => (
-          <div key={addr.coin} style={{ marginBottom: 16 }}>
-            <label style={{ ...labelStyle, color: addr.color }}>
-              {addr.label}
-            </label>
+          { label: '₿ Bitcoin (BTC)', value: btcAddress, setter: setBtcAddress, color: '#F7A600' },
+          { label: 'Ξ Ethereum (ETH)', value: ethAddress, setter: setEthAddress, color: '#627EEA' },
+          { label: '₮ USDT (TRC20)', value: usdtAddress, setter: setUsdtAddress, color: '#26A17B' },
+          { label: '● BNB (BEP20)', value: bnbAddress, setter: setBnbAddress, color: '#F7A600' },
+        ].map(item => (
+          <div key={item.label} style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, color: item.color, marginBottom: 7, fontWeight: 700 }}>{item.label}</label>
             <input
-              value={cryptoAddrs[addr.coin as keyof typeof cryptoAddrs]}
-              onChange={e => setCryptoAddrs(prev => ({ ...prev, [addr.coin]: e.target.value }))}
-              placeholder={addr.placeholder}
-              style={{ ...inputStyle, color: addr.color, borderColor: `${addr.color}33` }}
-              onFocus={e => e.target.style.borderColor = addr.color}
-              onBlur={e => e.target.style.borderColor = `${addr.color}33`}
+              value={item.value}
+              onChange={e => item.setter(e.target.value)}
+              placeholder={`Enter ${item.label} address...`}
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = item.color}
+              onBlur={e => e.target.style.borderColor = '#30363d'}
             />
           </div>
         ))}
 
-        <div style={{ background: 'rgba(247,166,0,0.06)', border: '1px solid rgba(247,166,0,0.2)', borderRadius: 8, padding: '10px 14px' }}>
-          <div style={{ fontSize: 11, color: '#F7A600', lineHeight: 1.7 }}>
-            ⚠️ Always double-check addresses before saving. Users will send real funds to these addresses.
-          </div>
-        </div>
+        <button onClick={saveCryptoAddresses} disabled={saving}
+          style={{ width: '100%', padding: '13px 0', background: saving ? '#161b22' : 'linear-gradient(135deg,#C9A84C,#E8D08C)', border: 'none', borderRadius: 12, color: saving ? '#484f58' : '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>
+          {saving ? '⟳ Saving...' : '💾 Save Crypto Addresses'}
+        </button>
       </div>
 
-      {/* Save Button */}
-      <button
-        onClick={save}
-        disabled={loading}
-        style={{ width: '100%', padding: '14px 0', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', border: 'none', borderRadius: 12, color: '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace', opacity: loading ? 0.6 : 1, marginBottom: 20 }}>
-        {loading ? '⟳ Saving...' : '💾 Save All Settings'}
-      </button>
+      {/* General Settings */}
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22, marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>⚙ General Settings</div>
+        <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>Platform configuration and fee settings</div>
 
-      {/* Danger Zone */}
-      <div style={{ background: '#0d1117', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 14, padding: 24 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#f85149', marginBottom: 16 }}>⚠️ Danger Zone</div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid #161b22', flexWrap: 'wrap', gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 13, color: '#e6edf3', marginBottom: 3 }}>Maintenance Mode</div>
-            <div style={{ fontSize: 11, color: '#484f58' }}>Block all user logins temporarily</div>
-          </div>
-          <button style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid rgba(248,81,73,0.3)', background: 'rgba(248,81,73,0.08)', color: '#f85149', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>
-            Enable
-          </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          {[
+            { label: 'Platform Name', value: platformName, setter: setPlatformName },
+            { label: 'Support Email', value: supportEmail, setter: setSupportEmail },
+            { label: 'Withdrawal Fee (%)', value: withdrawalFee, setter: setWithdrawalFee },
+            { label: 'Min Deposit ($)', value: minDeposit, setter: setMinDeposit },
+            { label: 'Min Withdrawal ($)', value: minWithdrawal, setter: setMinWithdrawal },
+          ].map(item => (
+            <div key={item.label}>
+              <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</label>
+              <input
+                value={item.value}
+                onChange={e => item.setter(e.target.value)}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = '#C9A84C'}
+                onBlur={e => e.target.style.borderColor = '#30363d'}
+              />
+            </div>
+          ))}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', flexWrap: 'wrap', gap: 10 }}>
+        {/* Maintenance mode toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: '1px solid #161b22', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 13, color: '#e6edf3', marginBottom: 3 }}>Clear Audit Logs</div>
-            <div style={{ fontSize: 11, color: '#484f58' }}>Permanently delete all audit records</div>
+            <div style={{ fontSize: 13, color: '#e6edf3', fontWeight: 600, marginBottom: 2 }}>🚧 Maintenance Mode</div>
+            <div style={{ fontSize: 11, color: '#484f58' }}>Temporarily restrict user access to platform</div>
           </div>
-          <button
-            onClick={async () => {
-              if (!confirm('Are you sure? This cannot be undone.')) return
-              const supabase = createClient()
-              await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-              setMessage('Audit logs cleared')
-              setTimeout(() => setMessage(''), 3000)
-            }}
-            style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid rgba(248,81,73,0.3)', background: 'rgba(248,81,73,0.08)', color: '#f85149', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>
-            Clear All
-          </button>
+          <div onClick={() => setMaintenanceMode(!maintenanceMode)}
+            style={{ width: 48, height: 26, borderRadius: 13, background: maintenanceMode ? '#f85149' : '#161b22', border: `1px solid ${maintenanceMode ? '#f85149' : '#30363d'}`, position: 'relative', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <div style={{ position: 'absolute', top: 3, left: maintenanceMode ? 24 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
+          </div>
         </div>
+
+        <button onClick={saveGeneralSettings} disabled={saving}
+          style={{ width: '100%', padding: '13px 0', background: saving ? '#161b22' : 'linear-gradient(135deg,#C9A84C,#E8D08C)', border: 'none', borderRadius: 12, color: saving ? '#484f58' : '#060a0f', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>
+          {saving ? '⟳ Saving...' : '💾 Save General Settings'}
+        </button>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: 24, fontSize: 11, color: '#484f58' }}>
-        © 2025 CapitalMarket Pro · All Rights Reserved
+      {/* Joshua Photo */}
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 22, marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>👤 Account Manager Photo</div>
+        <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>Photo shown to users as Joshua C. Elder's profile picture</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 800, color: '#060a0f', overflow: 'hidden', border: '3px solid rgba(201,168,76,0.3)', flexShrink: 0 }}>
+            {joshuaPhotoPreview ? <img src={joshuaPhotoPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+          </div>
+          <div style={{ flex: 1 }}>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+            <button onClick={() => fileRef.current?.click()}
+              style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid #21262d', background: '#161b22', color: '#e6edf3', fontSize: 13, cursor: 'pointer', fontFamily: 'monospace', marginBottom: 8, display: 'block' }}>
+              📷 Choose Photo
+            </button>
+            <div style={{ fontSize: 11, color: '#484f58' }}>JPG, PNG — Max 2MB · Displayed as 64×64px circle</div>
+          </div>
+        </div>
+
+        <button onClick={saveJoshuaPhoto} disabled={saving || !joshuaPhoto}
+          style={{ width: '100%', padding: '13px 0', background: !joshuaPhoto || saving ? '#161b22' : 'linear-gradient(135deg,#C9A84C,#E8D08C)', border: 'none', borderRadius: 12, color: !joshuaPhoto || saving ? '#484f58' : '#060a0f', fontSize: 14, fontWeight: 800, cursor: !joshuaPhoto ? 'not-allowed' : 'pointer', fontFamily: 'monospace' }}>
+          {saving ? '⟳ Saving...' : '💾 Save Photo'}
+        </button>
+      </div>
+
+      {/* Platform Info */}
+      <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 14 }}>ℹ Platform Info</div>
+        {[
+          { l: 'Platform Version', v: 'v2.0.0' },
+          { l: 'Framework', v: 'Next.js 14 App Router' },
+          { l: 'Database', v: 'Supabase PostgreSQL' },
+          { l: 'Hosting', v: 'Vercel' },
+          { l: 'Email Provider', v: 'Resend' },
+          { l: 'Domain', v: 'capitalmarket-pro.com' },
+        ].map(item => (
+          <div key={item.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #161b22' }}>
+            <span style={{ fontSize: 12, color: '#484f58' }}>{item.l}</span>
+            <span style={{ fontSize: 12, color: '#e6edf3', fontWeight: 500 }}>{item.v}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
