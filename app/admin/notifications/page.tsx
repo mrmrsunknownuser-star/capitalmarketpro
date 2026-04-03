@@ -22,6 +22,23 @@ export default function AdminNotificationsPage() {
     fetch()
   }, [])
 
+  {/* Quick Templates */}
+<div style={{ marginBottom: 16 }}>
+  <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Templates</label>
+  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    {[
+      { label: '💰 Daily Profit', t: '💰 Your Daily Profit is Ready!', m: 'Great news! Your investment plan has generated profits today. Log in to check your updated balance and consider reinvesting for compounded returns.' },
+      { label: '📈 Market Update', t: '📈 Market Alert — Opportunity!', m: 'Our AI has detected a significant market opportunity. Your automated system is already capitalizing on this move. Check your dashboard for updates.' },
+      { label: '🎉 Welcome Bonus', t: '🎉 Special Offer Just for You!', m: 'As a valued member of CapitalMarket Pro, you\'ve been selected for an exclusive bonus. Contact Joshua Elder in support to claim your offer.' },
+      { label: '⚡ Upgrade Plan', t: '⚡ Unlock Higher Returns Today', m: 'Your current plan is performing well! Upgrading to our Gold or Platinum plan could multiply your daily returns significantly. See Joshua for details.' },
+    ].map(tmpl => (
+      <button key={tmpl.label} onClick={() => { setTitle(tmpl.t); setMessage(tmpl.m) }}
+        style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+        {tmpl.label}
+      </button>
+    ))}
+  </div>
+</div>
   const send = async () => {
     if (!title || !message) return
     setSending(true)

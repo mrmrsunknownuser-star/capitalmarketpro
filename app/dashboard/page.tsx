@@ -3,6 +3,11 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import PortfolioChart from '@/components/PortfolioChart'
+import ROICalculator from '@/components/ROICalculator'
+import Achievements from '@/components/Achievements'
+import ActiveTraders from '@/components/ActiveTraders'
+import WithdrawalTicker from '@/components/withdrawalTicker'
 
 const INVESTMENT_PLANS = [
   { name: 'Starter', min: '$200', roi: '5%', duration: '7 Days', total: '35%', color: '#8b949e', icon: '🌱' },
@@ -304,6 +309,7 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      <ActiveTraders />
       {/* KYC Banner — only shows AFTER data is loaded */}
       {loaded && kycStatus !== 'approved' && (
         <div style={{ background: 'rgba(248,81,73,0.06)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -375,6 +381,13 @@ export default function DashboardHome() {
         )}
       </div>
 
+      {/* Portfolio Chart */}
+{balance && balance.total_balance > 0 && (
+  <PortfolioChart
+    balance={balance?.total_balance || 0}
+    pnl={balance?.total_pnl || 0}
+  />
+)}
       {/* ── AI BANNER ── */}
       <div style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.04))', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 14, padding: '18px 20px', marginBottom: 28, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ fontSize: 32 }}>🤖</div>
@@ -389,6 +402,8 @@ export default function DashboardHome() {
         </Link>
       </div>
 
+      
+      <ROICalculator />
       {/* ── INVESTMENT PLANS ── */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -519,6 +534,12 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      
+      
+      <Achievements
+  balance={balance?.total_balance || 0}
+  kycStatus={kycStatus}
+/>
       {/* ── RECENT ACTIVITY ── */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -546,6 +567,9 @@ export default function DashboardHome() {
               </div>
             </div>
           ))}
+        
+        <WithdrawalTicker />
+
         </div>
       </div>
 
