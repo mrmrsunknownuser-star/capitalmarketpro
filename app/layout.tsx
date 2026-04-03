@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/components/Toast'
+import { ThemeProvider } from '@/components/ThemeToggle'
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
@@ -177,14 +178,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {mounted && showSplash && (
           <SplashScreen onDone={() => setShowSplash(false)} />
         )}
-        <ToastProvider>
-          <div style={{
-            opacity: showSplash ? 0 : 1,
-            transition: 'opacity 0.4s ease 0.1s',
-          }}>
-            {children}
-          </div>
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <div style={{
+              opacity: showSplash ? 0 : 1,
+              transition: 'opacity 0.4s ease 0.1s',
+            }}>
+              {children}
+            </div>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
