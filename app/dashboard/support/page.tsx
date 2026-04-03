@@ -4,55 +4,51 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 const BOT_RESPONSES: Record<string, string> = {
-  default: "Thank you for reaching out! I'm connecting you to Joshua Elder, your dedicated account manager. He will respond shortly. 🔄",
-  deposit: "💰 To deposit: Go to Dashboard → Deposit → Choose a provider (MoonPay, Binance etc) → Send Bitcoin to your address. Processing takes under 30 minutes.",
-  withdraw: "💸 To withdraw: Go to Dashboard → Withdraw → Enter amount and Bitcoin wallet address → Submit. Our team reviews within 24-48 hours. 5% fee applies.",
-  kyc: "🪪 To verify KYC: Go to Dashboard → Verification → Upload government ID (front & back) + selfie. Standard: 24-48hrs. Expedited ($50): 2-4hrs.",
-  signal: "⚡ Signal plans: Basic $99/mo, Pro $199/mo, Elite $349/mo, VIP $599/mo. All include automated signals with 84% accuracy.",
-  invest: "💹 Investment plans: Starter ($200 min, 5%/day) to Black ($100k min, 25%/day). Fully automated. Visit Dashboard → Invest.",
-  card: "💳 Cards from $150 (virtual) to $2,500 (Titanium). All VISA-powered with cashback. Visit Dashboard → Cards.",
-  fee: "📋 Fees: Deposit 0% · Withdrawal 5% (min $100) · Trading 10% on profits · Inactivity $39.90/month after 6 months.",
-  hello: "👋 Hello! Welcome to CapitalMarket Pro support. How can I help you today? Ask about deposits, withdrawals, KYC, plans, or type 'Joshua' to reach your account manager.",
-  hi: "👋 Hi! Welcome to CapitalMarket Pro. What can I help you with today?",
-  joshua: "🔄 Connecting you to Joshua C. Elder, your dedicated Account Manager. He will respond within 2 hours.",
-  balance: "💰 Your balance updates in real-time on your Dashboard home page. For any discrepancies please contact Joshua directly.",
-  trade: "📈 Manual Trading is under Dashboard → Market → Trade tab. Minimum $500 funding via Bitcoin or Apple Pay required.",
+  'deposit': 'To deposit funds, go to Dashboard → Deposit. Send Bitcoin or other crypto to your unique wallet address and submit your transaction hash. Funds appear within 30 minutes after confirmation.',
+  'withdraw': 'To withdraw, go to Dashboard → Withdraw. You need completed KYC verification. Enter your amount and wallet address. Processing takes 24-48 hours.',
+  'kyc': 'KYC (Know Your Customer) is required to unlock withdrawals and full platform access. Go to Dashboard → KYC Verification and submit your government-issued ID.',
+  'plan': 'We offer 6 investment plans: Starter (5%/day), Silver (8%/day), Gold (12%/day), Platinum (15%/day), Elite (20%/day), and Black (25%/day). Visit the Invest page to activate.',
+  'profit': 'Your daily profits are automatically credited to your account balance every 24 hours. Go to Portfolio to see your earnings and active plans.',
+  'card': 'CapitalMarket Pro offers virtual and physical VISA cards with up to 7% cashback. Go to Dashboard → Cards to apply.',
+  'affiliate': 'Earn $50 for every person you refer! Share your unique referral link from Dashboard → Affiliate. You can earn up to $200 per referral at Diamond tier.',
+  'signal': 'Our AI trading signals are available in Dashboard → Signals. Plans start at $99/month for 5 signals per day up to unlimited VIP signals.',
+  'help': 'I can help you with: deposits, withdrawals, KYC verification, investment plans, profit crediting, cards, affiliate program, and trading signals. What do you need help with?',
+  'hello': 'Hello! Welcome to CapitalMarket Pro support. I\'m your AI assistant. For personalized help, chat with Joshua Elder in the Live Chat tab. What can I help you with?',
+  'hi': 'Hi there! 👋 I\'m your support assistant. I can answer questions about deposits, withdrawals, KYC, investment plans, and more. How can I help?',
+  'default': 'I\'m not sure about that specific question. For detailed help, please use the Live Chat tab to speak directly with Joshua Elder, your dedicated Account Manager.',
 }
 
-const getReply = (msg: string) => {
-  const l = msg.toLowerCase()
-  if (l.includes('hello') || l.includes('hey')) return BOT_RESPONSES.hello
-  if (l.includes('hi ') || l === 'hi') return BOT_RESPONSES.hi
-  if (l.includes('deposit') || l.includes('fund')) return BOT_RESPONSES.deposit
-  if (l.includes('withdraw') || l.includes('cashout')) return BOT_RESPONSES.withdraw
-  if (l.includes('kyc') || l.includes('verif')) return BOT_RESPONSES.kyc
-  if (l.includes('signal')) return BOT_RESPONSES.signal
-  if (l.includes('invest') || l.includes('plan') || l.includes('roi')) return BOT_RESPONSES.invest
-  if (l.includes('card')) return BOT_RESPONSES.card
-  if (l.includes('fee') || l.includes('charge')) return BOT_RESPONSES.fee
-  if (l.includes('joshua') || l.includes('human') || l.includes('agent') || l.includes('person')) return BOT_RESPONSES.joshua
-  if (l.includes('balance')) return BOT_RESPONSES.balance
-  if (l.includes('trade') || l.includes('trading')) return BOT_RESPONSES.trade
+const getBotResponse = (msg: string): string => {
+  const lower = msg.toLowerCase()
+  for (const key of Object.keys(BOT_RESPONSES)) {
+    if (key !== 'default' && lower.includes(key)) return BOT_RESPONSES[key]
+  }
   return BOT_RESPONSES.default
 }
 
-type Msg = { id: string; content: string; sender: 'user' | 'bot' | 'admin'; time: string; name?: string }
+const QUICK_QUESTIONS = [
+  'How do I deposit?',
+  'How do I withdraw?',
+  'What is KYC?',
+  'What investment plans are available?',
+  'When are profits credited?',
+  'How does the affiliate program work?',
+]
 
 export default function SupportPage() {
   const [tab, setTab] = useState<'bot' | 'live'>('bot')
-  const [botMsgs, setBotMsgs] = useState<Msg[]>([{
-    id: '0', sender: 'bot', time: new Date().toISOString(), name: 'CMP Bot',
-    content: "👋 Welcome to CapitalMarket Pro Support! I'm your automated assistant. Ask anything about deposits, withdrawals, KYC, investment plans, signals, or cards. Type 'Joshua' to connect with your account manager.",
-  }])
-  const [liveMsgs, setLiveMsgs] = useState<Msg[]>([])
-  const [input, setInput] = useState('')
-  const [botTyping, setBotTyping] = useState(false)
-  const [chatId, setChatId] = useState<string | null>(null)
+  const [botMessages, setBotMessages] = useState<{ role: string; content: string; time: string }[]>([
+    { role: 'bot', content: 'Hi! 👋 I\'m your AI support assistant. I can answer common questions instantly. For personalized help, switch to the Live Chat tab to speak with Joshua Elder. How can I help you today?', time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
+  ])
+  const [botInput, setBotInput] = useState('')
+  const [liveMessages, setLiveMessages] = useState<any[]>([])
+  const [liveInput, setLiveInput] = useState('')
+  const [sending, setSending] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [joshuaAvatar, setJoshuaAvatar] = useState<string | null>(null)
-  const [liveReady, setLiveReady] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [joshuaPhoto, setJoshuaPhoto] = useState<string | null>(null)
+  const [joshuaOnline] = useState(true)
+  const botEndRef = useRef<HTMLDivElement>(null)
+  const liveEndRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<any>(null)
 
   useEffect(() => {
@@ -62,87 +58,30 @@ export default function SupportPage() {
       if (!user) return
       setUserId(user.id)
 
-      // Get Joshua photo
-      const { data: jd } = await supabase.from('users').select('avatar_url').eq('email', 'admin@capitalmarketpro.com').single()
-      if (jd?.avatar_url) setJoshuaAvatar(jd.avatar_url)
+      // Fetch Joshua photo
+      const { data: admin } = await supabase.from('users').select('avatar_url').eq('role', 'admin').single()
+      if (admin?.avatar_url) setJoshuaPhoto(admin.avatar_url)
 
-      // Get or create chat
-      let chat: any = null
-      const { data: existing } = await supabase
-        .from('support_chats')
+      // Fetch existing messages
+      const { data: msgs } = await supabase
+        .from('support_messages')
         .select('*')
-        .eq('user_id', user.id)
-        .single()
+        .eq('chat_id', user.id)
+        .order('created_at', { ascending: true })
+      setLiveMessages(msgs || [])
 
-      if (existing) {
-        chat = existing
-      } else {
-        const { data: newChat } = await supabase
-          .from('support_chats')
-          .insert({ user_id: user.id, status: 'open', updated_at: new Date().toISOString() })
-          .select()
-          .single()
-        chat = newChat
-
-        // Welcome message from Joshua
-        if (newChat) {
-          await supabase.from('support_messages').insert({
-            chat_id: newChat.id,
-            sender_id: user.id,
-            sender_role: 'admin',
-            message: "👋 Hello! I'm Joshua C. Elder, your dedicated Account Manager. I'm here to help with your investments, trading, and any account questions. How can I assist you today?",
-          })
-        }
-      }
-
-      if (chat) {
-        setChatId(chat.id)
-
-        // Load existing messages
-        const { data: msgs } = await supabase
-          .from('support_messages')
-          .select('*')
-          .eq('chat_id', chat.id)
-          .order('created_at', { ascending: true })
-
-        if (msgs) {
-          setLiveMsgs(msgs.map(m => ({
-            id: m.id,
-            content: m.message,
-            sender: m.sender_role === 'user' ? 'user' : 'admin',
-            time: m.created_at,
-            name: m.sender_role === 'admin' ? 'Joshua Elder' : 'You',
-          })))
-        }
-
-        setLiveReady(true)
-
-        // Subscribe to new messages
-        if (channelRef.current) supabase.removeChannel(channelRef.current)
-        channelRef.current = supabase
-          .channel(`user-chat-${chat.id}`)
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'support_messages',
-            filter: `chat_id=eq.${chat.id}`,
-          }, (payload) => {
-            const m = payload.new as any
-            if (m.sender_role === 'admin') {
-              setLiveMsgs(prev => {
-                if (prev.find(x => x.id === m.id)) return prev
-                return [...prev, {
-                  id: m.id,
-                  content: m.message,
-                  sender: 'admin',
-                  time: m.created_at,
-                  name: 'Joshua Elder',
-                }]
-              })
-            }
-          })
-          .subscribe()
-      }
+      // Realtime
+      channelRef.current = supabase
+        .channel(`support-${user.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `chat_id=eq.${user.id}`,
+        }, payload => {
+          setLiveMessages(prev => [...prev, payload.new as any])
+        })
+        .subscribe()
     }
     init()
     return () => {
@@ -152,177 +91,225 @@ export default function SupportPage() {
   }, [])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [botMsgs, liveMsgs, botTyping])
+    botEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [botMessages])
 
-  const sendBot = async () => {
-    if (!input.trim()) return
-    const userMsg: Msg = { id: Date.now().toString(), content: input, sender: 'user', time: new Date().toISOString() }
-    setBotMsgs(prev => [...prev, userMsg])
-    const userInput = input
-    setInput('')
-    setBotTyping(true)
-    await new Promise(r => setTimeout(r, 1000 + Math.random() * 600))
-    setBotTyping(false)
-    setBotMsgs(prev => [...prev, { id: Date.now().toString(), content: getReply(userInput), sender: 'bot', time: new Date().toISOString(), name: 'CMP Bot' }])
+  useEffect(() => {
+    liveEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [liveMessages])
+
+  const sendBotMessage = (content: string) => {
+    if (!content.trim()) return
+    const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    setBotMessages(prev => [...prev, { role: 'user', content, time }])
+    setBotInput('')
+    setTimeout(() => {
+      setBotMessages(prev => [...prev, { role: 'bot', content: getBotResponse(content), time }])
+    }, 600)
   }
 
-  const sendLive = async () => {
-    if (!input.trim() || !chatId || !userId) return
+  const sendLiveMessage = async () => {
+    if (!liveInput.trim() || !userId || sending) return
+    setSending(true)
     const supabase = createClient()
-    const msg = input.trim()
-    setInput('')
+    const content = liveInput.trim()
+    setLiveInput('')
 
-    // Optimistically add to UI
-    const tempId = Date.now().toString()
-    setLiveMsgs(prev => [...prev, { id: tempId, content: msg, sender: 'user', time: new Date().toISOString() }])
+    await supabase.from('support_chats').upsert({
+      id: userId,
+      user_id: userId,
+      status: 'open',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
 
-    // Save to DB
     await supabase.from('support_messages').insert({
-      chat_id: chatId,
+      chat_id: userId,
       sender_id: userId,
       sender_role: 'user',
-      message: msg,
+      content,
+      is_read: false,
     })
 
-    // Update chat timestamp
-    await supabase.from('support_chats').update({ updated_at: new Date().toISOString() }).eq('id', chatId)
-
     // Notify admin
-    const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').single()
-    if (adminUser?.id) {
+    const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
+    if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: adminUser.id,
+        user_id: admin.id,
         title: '💬 New Support Message',
-        message: `User: "${msg.slice(0, 80)}${msg.length > 80 ? '...' : ''}"`,
-        type: 'support',
+        message: content.length > 60 ? content.slice(0, 60) + '...' : content,
+        type: 'info',
         is_read: false,
       })
     }
+    setSending(false)
   }
 
-  const handleSend = () => tab === 'bot' ? sendBot() : sendLive()
-  const handleKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }
-
-  const msgs = tab === 'bot' ? botMsgs : liveMsgs
-
   return (
-    <div style={{ height: 'calc(100vh - 88px)', display: 'flex', flexDirection: 'column', fontFamily: 'monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)', fontFamily: 'monospace' }}>
 
       {/* Header */}
-      <div style={{ padding: '14px 20px', background: '#0d1117', borderBottom: '1px solid #161b22', flexShrink: 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: '#e6edf3', marginBottom: 10 }}>Support Center</div>
-        <div style={{ display: 'flex', gap: 4, background: '#161b22', borderRadius: 10, padding: 3 }}>
-          <button onClick={() => setTab('bot')} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', background: tab === 'bot' ? '#0d1117' : 'transparent', color: tab === 'bot' ? '#C9A84C' : '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: tab === 'bot' ? 700 : 400 }}>
-            🤖 Auto Support
-          </button>
-          <button onClick={() => setTab('live')} style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', background: tab === 'live' ? '#0d1117' : 'transparent', color: tab === 'live' ? '#C9A84C' : '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: tab === 'live' ? 700 : 400 }}>
-            👤 Joshua Elder
-          </button>
-        </div>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3', marginBottom: 2 }}>Support Center</div>
+        <div style={{ fontSize: 11, color: '#484f58' }}>AI Assistant + Live chat with Joshua Elder</div>
       </div>
 
-      {/* Joshua header */}
-      {tab === 'live' && (
-        <div style={{ padding: '12px 20px', background: 'rgba(201,168,76,0.04)', borderBottom: '1px solid #161b22', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#060a0f', overflow: 'hidden', border: '2px solid rgba(201,168,76,0.4)' }}>
-              {joshuaAvatar ? <img src={joshuaAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
-            </div>
-            <div style={{ position: 'absolute', bottom: 1, right: 1, width: 11, height: 11, borderRadius: '50%', background: '#3fb950', border: '2px solid #0d1117' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>Joshua C. Elder</div>
-            <div style={{ fontSize: 11, color: '#C9A84C' }}>Account Manager</div>
-            <div style={{ fontSize: 10, color: '#3fb950' }}>● Online · responds within 2 hours</div>
-          </div>
-        </div>
-      )}
-
-      {/* Bot header */}
-      {tab === 'bot' && (
-        <div style={{ padding: '10px 20px', background: 'rgba(123,43,249,0.04)', borderBottom: '1px solid #161b22', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#7B2BF9,#9B51E0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>CMP Automated Assistant</div>
-            <div style={{ fontSize: 11, color: '#7B2BF9' }}>AI-powered · Instant responses 24/7</div>
-          </div>
-        </div>
-      )}
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {msgs.map((msg, i) => (
-          <div key={msg.id || i} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row' }}>
-            {msg.sender !== 'user' && (
-              <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: msg.sender === 'bot' ? 'linear-gradient(135deg,#7B2BF9,#9B51E0)' : 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: msg.sender === 'bot' ? 14 : 11, fontWeight: 800, color: '#060a0f' }}>
-                {msg.sender === 'bot' ? '🤖' : (joshuaAvatar ? <img src={joshuaAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE')}
-              </div>
-            )}
-            <div style={{ maxWidth: '76%' }}>
-              {msg.sender !== 'user' && (
-                <div style={{ fontSize: 10, color: '#484f58', marginBottom: 3, paddingLeft: 4 }}>
-                  {msg.name || (msg.sender === 'bot' ? 'CMP Bot' : 'Joshua Elder')} · {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              )}
-              <div style={{ padding: '11px 15px', borderRadius: msg.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.sender === 'user' ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : msg.sender === 'bot' ? '#161b22' : '#0d1117', color: msg.sender === 'user' ? '#060a0f' : '#e6edf3', fontSize: 13, lineHeight: 1.7, border: msg.sender === 'user' ? 'none' : msg.sender === 'bot' ? '1px solid #21262d' : '1px solid rgba(201,168,76,0.2)' }}>
-                {msg.content}
-              </div>
-              {msg.sender === 'user' && (
-                <div style={{ fontSize: 10, color: '#484f58', marginTop: 3, textAlign: 'right', paddingRight: 4 }}>
-                  {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Sent ✓
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
+        {[
+          { id: 'bot', label: '🤖 AI Assistant', desc: 'Instant answers' },
+          { id: 'live', label: '💬 Joshua Elder', desc: 'Live chat' },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id as any)}
+            style={{ flex: 1, padding: '12px 0', border: 'none', background: 'transparent', borderBottom: tab === t.id ? '2px solid #C9A84C' : '2px solid transparent', color: tab === t.id ? '#C9A84C' : '#484f58', cursor: 'pointer', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: 12, fontWeight: tab === t.id ? 700 : 400 }}>{t.label}</div>
+            <div style={{ fontSize: 10, marginTop: 1 }}>{t.desc}</div>
+          </button>
         ))}
+      </div>
 
-        {botTyping && tab === 'bot' && (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#7B2BF9,#9B51E0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🤖</div>
-            <div style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: '16px 16px 16px 4px', padding: '12px 16px', display: 'flex', gap: 4, alignItems: 'center' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#484f58', animation: `bounce 1.2s ease infinite ${i * 0.2}s` }} />
+      {/* BOT TAB */}
+      {tab === 'bot' && (
+        <>
+          {/* Quick questions */}
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }}>
+              {QUICK_QUESTIONS.map(q => (
+                <button key={q} onClick={() => sendBotMessage(q)}
+                  style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 10, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {q}
+                </button>
               ))}
             </div>
           </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
 
-      {/* Quick replies for bot */}
-      {tab === 'bot' && (
-        <div style={{ padding: '8px 20px', display: 'flex', gap: 6, flexWrap: 'wrap', borderTop: '1px solid #161b22', flexShrink: 0 }}>
-          {['Deposit', 'Withdraw', 'KYC', 'Investment Plans', 'Signals', 'Talk to Joshua'].map(q => (
-            <button key={q} onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 50) }}
-              style={{ padding: '5px 11px', borderRadius: 20, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-              {q}
-            </button>
-          ))}
-        </div>
+          {/* Bot messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {botMessages.map((msg, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
+                {msg.role === 'bot' && (
+                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>🤖</div>
+                )}
+                <div style={{ maxWidth: '78%' }}>
+                  <div style={{ padding: '11px 14px', borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: msg.role === 'user' ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22', border: msg.role === 'bot' ? '1px solid #21262d' : 'none', color: msg.role === 'user' ? '#060a0f' : '#e6edf3', fontSize: 13, lineHeight: 1.7 }}>
+                    {msg.content}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#484f58', marginTop: 4, textAlign: msg.role === 'user' ? 'right' : 'left' }}>{msg.time}</div>
+                </div>
+              </div>
+            ))}
+            <div ref={botEndRef} />
+          </div>
+
+          {/* Bot input */}
+          <div style={{ padding: '12px 14px', borderTop: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={botInput} onChange={e => setBotInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') sendBotMessage(botInput) }}
+                placeholder="Ask me anything..."
+                style={{ flex: 1, background: '#161b22', border: '1px solid #21262d', borderRadius: 24, padding: '10px 16px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
+                onFocus={e => e.target.style.borderColor = '#C9A84C'}
+                onBlur={e => e.target.style.borderColor = '#21262d'}
+              />
+              <button onClick={() => sendBotMessage(botInput)} disabled={!botInput.trim()}
+                style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: botInput.trim() ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22', color: botInput.trim() ? '#060a0f' : '#484f58', fontSize: 16, cursor: botInput.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+                →
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Input */}
-      <div style={{ padding: '12px 16px', background: '#0d1117', borderTop: '1px solid #161b22', display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder={tab === 'bot' ? 'Ask anything...' : 'Message Joshua Elder...'}
-          style={{ flex: 1, background: '#161b22', border: '1px solid #21262d', borderRadius: 12, padding: '12px 16px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
-          onFocus={e => e.target.style.borderColor = '#C9A84C'}
-          onBlur={e => e.target.style.borderColor = '#21262d'}
-        />
-        <button onClick={handleSend} disabled={!input.trim()}
-          style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: input.trim() ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22', color: '#060a0f', fontSize: 18, cursor: input.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          ➤
-        </button>
-      </div>
+      {/* LIVE CHAT TAB */}
+      {tab === 'live' && (
+        <>
+          {/* Joshua header */}
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #161b22', background: '#0a0e14', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f', overflow: 'hidden', border: '2px solid rgba(201,168,76,0.4)' }}>
+                {joshuaPhoto ? <img src={joshuaPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+              </div>
+              <div style={{ position: 'absolute', bottom: 1, right: 1, width: 12, height: 12, borderRadius: '50%', background: joshuaOnline ? '#3fb950' : '#484f58', border: '2px solid #0a0e14' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3', marginBottom: 2 }}>Joshua C. Elder</div>
+              <div style={{ fontSize: 11, color: joshuaOnline ? '#3fb950' : '#484f58' }}>
+                {joshuaOnline ? '● Online · Account Manager' : '○ Away · Replies within 24h'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Response time</div>
+              <div style={{ fontSize: 11, color: '#C9A84C', fontWeight: 700 }}>~5 minutes</div>
+            </div>
+          </div>
 
-      <style>{`
-        @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-      `}</style>
+          {/* Live messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {liveMessages.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 12, padding: 20 }}>
+                <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#060a0f', overflow: 'hidden' }}>
+                  {joshuaPhoto ? <img src={joshuaPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#e6edf3', marginBottom: 8 }}>Chat with Joshua Elder</div>
+                  <div style={{ fontSize: 13, color: '#484f58', lineHeight: 1.8, maxWidth: 300 }}>
+                    Your dedicated Account Manager is here to help you maximize your returns. Send a message to get started!
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+                  {['Help me get started', 'I have a deposit question', 'Tell me about investment plans', 'I need to withdraw'].map(q => (
+                    <button key={q} onClick={() => setLiveInput(q)}
+                      style={{ padding: '7px 14px', borderRadius: 20, border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.06)', color: '#C9A84C', fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : liveMessages.map((msg, i) => {
+              const isUser = msg.sender_role === 'user'
+              const showTime = i === 0 || new Date(msg.created_at).getTime() - new Date(liveMessages[i - 1].created_at).getTime() > 5 * 60 * 1000
+              return (
+                <div key={msg.id || i}>
+                  {showTime && (
+                    <div style={{ textAlign: 'center', fontSize: 10, color: '#484f58', marginBottom: 8 }}>
+                      {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
+                    {!isUser && (
+                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#060a0f', overflow: 'hidden', flexShrink: 0 }}>
+                        {joshuaPhoto ? <img src={joshuaPhoto} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : 'JE'}
+                      </div>
+                    )}
+                    <div style={{ maxWidth: '78%', padding: '11px 14px', borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isUser ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22', border: isUser ? 'none' : '1px solid #21262d', color: isUser ? '#060a0f' : '#e6edf3', fontSize: 13, lineHeight: 1.7 }}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <div ref={liveEndRef} />
+          </div>
+
+          {/* Live input */}
+          <div style={{ padding: '12px 14px', borderTop: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <textarea value={liveInput} onChange={e => setLiveInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendLiveMessage() } }}
+                placeholder="Message Joshua Elder... (Enter to send)"
+                rows={2}
+                style={{ flex: 1, background: '#161b22', border: '1px solid #21262d', borderRadius: 14, padding: '10px 14px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace', resize: 'none', lineHeight: 1.5 }}
+                onFocus={e => e.target.style.borderColor = '#C9A84C'}
+                onBlur={e => e.target.style.borderColor = '#21262d'}
+              />
+              <button onClick={sendLiveMessage} disabled={!liveInput.trim() || sending}
+                style={{ width: 46, borderRadius: 14, border: 'none', background: liveInput.trim() && !sending ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22', color: liveInput.trim() && !sending ? '#060a0f' : '#484f58', fontSize: 18, cursor: liveInput.trim() && !sending ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+                {sending ? '⟳' : '→'}
+              </button>
+            </div>
+            <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>Enter to send · Shift+Enter for new line</div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

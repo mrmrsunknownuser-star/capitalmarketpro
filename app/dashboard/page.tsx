@@ -574,7 +574,7 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      <MilestonePopup balance={totalBalance} />
+      
       <PurchaseModal modal={modal} onClose={() => setModal(null)} />
     </div>
   )
