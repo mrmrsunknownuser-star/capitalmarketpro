@@ -169,20 +169,37 @@ export default function AdminDashboardPage() {
         <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', marginBottom: 14 }}>⚡ Quick Actions</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
-            { label: '💰 Set Balance', href: '/admin/balances' },
-            { label: '✅ Review KYC', href: '/admin/users' },
-            { label: '⬆ Withdrawals', href: '/admin/withdrawals' },
-            { label: '💳 Card Apps', href: '/admin/cards' },
-            { label: '📢 Notify Users', href: '/admin/notifications' },
-            { label: '💬 Support', href: '/admin/support' },
-            { label: '⚙ Settings', href: '/admin/settings' },
-          ].map(a => (
-            <Link key={a.label} href={a.href} style={{ textDecoration: 'none' }}>
-              <button style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                {a.label}
-              </button>
-            </Link>
-          ))}
+  { label: '💰 Set Balance', href: '/admin/balances' },
+  { label: '✅ Review KYC', href: '/admin/users' },
+  { label: '⬆ Withdrawals', href: '/admin/withdrawals' },
+  { label: '💳 Card Apps', href: '/admin/cards' },
+  { label: '📢 Notify Users', href: '/admin/notifications' },
+  { label: '💬 Support', href: '/admin/support' },
+  { label: '⚙ Settings', href: '/admin/settings' },
+  { label: '💰 Credit Daily Profits', href: '#', onClick: async () => {
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('credit_daily_profits')
+  if (error) alert('Error: ' + error.message)
+  else alert('✅ ' + data)
+}}
+].map(a => (
+  <Link key={a.label} href={a.href} style={{ textDecoration: 'none' }}>
+    <button style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+      {a.label}
+    </button>
+  </Link>
+))}
+{/* Credit profits button */}
+<button
+  onClick={async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase.rpc('credit_daily_profits')
+    if (error) alert('Error: ' + error.message)
+    else { alert('✅ ' + data); window.location.reload() }
+  }}
+  style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(63,185,80,0.3)', background: 'rgba(63,185,80,0.08)', color: '#3fb950', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+  💰 Credit Daily Profits
+</button>
         </div>
       </div>
     </div>
