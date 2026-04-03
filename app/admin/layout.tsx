@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
+  { icon: '▦', label: 'Dashboard', href: '/admin/dashboard' },
   { icon: '👥', label: 'Users', href: '/admin/users' },
   { icon: '💰', label: 'Balances', href: '/admin/balances' },
   { icon: '⬇', label: 'Deposits', href: '/admin/deposits' },

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import './globals.css'
+import { ToastProvider } from '@/components/Toast'
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [phase, setPhase] = useState(0)
@@ -93,7 +94,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           opacity: splash ? 0 : 1,
           transition: 'opacity 0.6s ease',
         }}>
-          {children}
+          <ToastProvider>
+  {children}
+</ToastProvider>
         </div>
       </body>
     </html>

@@ -10,6 +10,7 @@ const navItems = [
   { icon: '📊', label: 'Market', href: '/dashboard/market' },
   { icon: '🔄', label: 'Trade', href: '/dashboard/trade' },
   { icon: '📰', label: 'News', href: '/dashboard/news' },
+  { icon: '🏆', label: 'Leaderboard', href: '/dashboard/leaderboard' },
   { icon: '⚡', label: 'Signals', href: '/dashboard/signals' },
   { icon: '💳', label: 'Cards', href: '/dashboard/card' },
   { icon: '⬇', label: 'Deposit', href: '/dashboard/deposit' },

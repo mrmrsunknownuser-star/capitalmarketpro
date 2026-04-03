@@ -8,6 +8,7 @@ import ROICalculator from '@/components/ROICalculator'
 import Achievements from '@/components/Achievements'
 import ActiveTraders from '@/components/ActiveTraders'
 import WithdrawalTicker from '@/components/withdrawalTicker'
+import MilestonePopup from '@/components/MilestonePopup'
 
 const INVESTMENT_PLANS = [
   { name: 'Starter', min: '$200', roi: '5%', duration: '7 Days', total: '35%', color: '#8b949e', icon: '🌱' },
@@ -573,6 +574,7 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      <MilestonePopup balance={totalBalance} />
       <PurchaseModal modal={modal} onClose={() => setModal(null)} />
     </div>
   )
