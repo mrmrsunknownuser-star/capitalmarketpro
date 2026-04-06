@@ -85,7 +85,7 @@ export default function InvestPage() {
     const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
     if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: admin.id,
+        recipient_role: 'admin',
         title: `💹 New Investment Plan Activated`,
         message: `User activated ${selected.name} plan with $${amt.toLocaleString()}. Daily profit: $${dailyProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
         type: 'info', is_read: false,

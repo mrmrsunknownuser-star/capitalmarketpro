@@ -105,7 +105,7 @@ export default function KYCPage() {
     const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
     if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: admin.id,
+        recipient_role: 'admin',
         title: '🪪 New KYC Submission',
         message: `${fullName} submitted KYC verification. ID Type: ${idType.toUpperCase()}. Requires review.`,
         type: 'info',

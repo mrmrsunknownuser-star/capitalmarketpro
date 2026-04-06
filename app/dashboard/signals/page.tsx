@@ -59,7 +59,7 @@ export default function SignalsPage() {
       const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
       if (admin?.id) {
         await supabase.from('notifications').insert({
-          user_id: admin.id,
+          recipient_role: 'admin',
           title: `⚡ New Signal Subscription`,
           message: `User subscribed to ${plan.name} Signal Plan ($${plan.price}/mo)`,
           type: 'info', is_read: false,

@@ -134,7 +134,7 @@ export default function SupportPage() {
     const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
     if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: admin.id,
+        recipient_role: 'admin',
         title: '💬 New Support Message',
         message: content.length > 60 ? content.slice(0, 60) + '...' : content,
         type: 'info',

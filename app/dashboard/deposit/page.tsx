@@ -63,7 +63,7 @@ export default function DepositPage() {
     const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
     if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: admin.id,
+        recipient_role: 'admin',
         title: '💰 New Deposit Request',
         message: `$${parseFloat(amount).toLocaleString()} via ${selectedCrypto}. TX: ${txHash.slice(0, 20)}...`,
         type: 'info', is_read: false,

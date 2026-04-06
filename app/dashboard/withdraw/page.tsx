@@ -57,7 +57,7 @@ export default function WithdrawPage() {
     const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
     if (admin?.id) {
       await supabase.from('notifications').insert({
-        user_id: admin.id,
+        recipient_role: 'admin',
         title: '⬆ New Withdrawal Request',
         message: `$${parseFloat(amount).toLocaleString()} withdrawal to ${wallet.slice(0, 16)}...`,
         type: 'info', is_read: false,
