@@ -126,7 +126,7 @@ export default function AdminWithdrawalsPage() {
     setSelected(null)
     setNote('')
     setActionLoading(false)
-    fetchWithdrawals()
+    setTimeout(() => fetchWithdrawals(), 800)
   }
 
   const filtered = withdrawals.filter(w => {
