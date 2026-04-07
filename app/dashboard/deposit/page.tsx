@@ -45,41 +45,63 @@ export default function DepositPage() {
     init()
   }, [])
 
-  const handleSubmit = async () => {
-    if (!amount || !txHash || !userId) return
-    setSubmitting(true)
-    const supabase = createClient()
+const handleSubmit = async () => {
+  if (!amount || !txHash || !userId) return
+  setSubmitting(true)
+  const supabase = createClient()
 
-    try {
-      await supabase.from('deposits').insert({
-        user_id: userId,
-        amount: parseFloat(amount),
-        crypto: selectedCrypto,
-        tx_hash: txHash,
-        status: 'pending',
-      })
-    } catch {}
-
-    const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
-    if (admin?.id) {
-      await supabase.from('notifications').insert({
-        recipient_role: 'admin',
-        title: '💰 New Deposit Request',
-        message: `$${parseFloat(amount).toLocaleString()} via ${selectedCrypto}. TX: ${txHash.slice(0, 20)}...`,
-        type: 'info', is_read: false,
-      })
-    }
-
-    await supabase.from('notifications').insert({
+  // Remove try/catch to see real error
+  const { data: insertData, error: insertError } = await supabase
+    .from('deposits')
+    .insert({
       user_id: userId,
-      title: '💰 Deposit Submitted',
-      message: `Your deposit of $${parseFloat(amount).toLocaleString()} via ${selectedCrypto} is under review. Funds appear within 30 minutes.`,
-      type: 'info', is_read: false,
+      amount: parseFloat(amount),
+      crypto: selectedCrypto,
+      tx_hash: txHash,
+      status: 'pending',
     })
+    .select()
+    .single()
 
+  if (insertError) {
+    console.error('DEPOSIT INSERT ERROR:', insertError)
+    alert('Insert failed: ' + insertError.message)
     setSubmitting(false)
-    setSubmitted(true)
+    return
   }
+
+  console.log('Deposit inserted:', insertData)
+
+  // Notify admin
+  const { data: admin } = await supabase
+    .from('users')
+    .select('id')
+    .eq('role', 'admin')
+    .single()
+
+  if (admin?.id) {
+    await supabase.from('notifications').insert({
+      user_id: admin.id,
+      title: '💰 New Deposit Request',
+      message: `$${parseFloat(amount).toLocaleString()} via ${selectedCrypto}. TX: ${txHash.slice(0, 20)}...`,
+      type: 'info',
+      is_read: false,
+      recipient_role: 'admin',
+    })
+  }
+
+  await supabase.from('notifications').insert({
+    user_id: userId,
+    title: '💰 Deposit Submitted',
+    message: `Your deposit of $${parseFloat(amount).toLocaleString()} via ${selectedCrypto} is under review. Funds appear within 30 minutes.`,
+    type: 'info',
+    is_read: false,
+    recipient_role: 'user',
+  })
+
+  setSubmitting(false)
+  setSubmitted(true)
+}
 
   const addr = addresses[selectedCrypto]
 
