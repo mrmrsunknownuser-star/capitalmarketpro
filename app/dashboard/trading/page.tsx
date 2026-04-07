@@ -75,8 +75,12 @@ export default function TradingPage() {
   const [totalWins, setTotalWins] = useState(0)
   const [totalLosses, setTotalLosses] = useState(0)
   const [sessionPnl, setSessionPnl] = useState(0)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const priceRef = useRef(PAIRS[0].base)
+  const userIdRef = useRef<string | null>(null)
+  const balanceRef = useRef(0)
+  const notifTimeout = useRef<any>(null)
 
   // ── Auth + Balance ──
   useEffect(() => {
@@ -84,25 +88,36 @@ export default function TradingPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
       setUserId(user.id)
+      userIdRef.current = user.id
+
       const { data: bal } = await supabase
         .from('balances')
         .select('total_balance')
         .eq('user_id', user.id)
         .single()
-      setBalance(bal?.total_balance || 0)
 
-      supabase.channel(`trading-balance-${user.id}`)
+      const b = bal?.total_balance || 0
+      setBalance(b)
+      balanceRef.current = b
+
+      // Realtime balance sync
+      supabase.channel(`trading-bal-${user.id}`)
         .on('postgres_changes', {
           event: '*', schema: 'public', table: 'balances',
           filter: `user_id=eq.${user.id}`,
-        }, p => setBalance((p.new as any).total_balance || 0))
+        }, p => {
+          const newBal = (p.new as any).total_balance || 0
+          setBalance(newBal)
+          balanceRef.current = newBal
+        })
         .subscribe()
     }
     init()
   }, [])
 
-  // ── Initialize price history ──
+  // ── Initialize price history on pair change ──
   useEffect(() => {
     const now = Date.now()
     const initial: PricePoint[] = []
@@ -110,14 +125,16 @@ export default function TradingPage() {
     for (let i = 99; i >= 0; i--) {
       const open = p
       const change = (Math.random() - 0.5) * p * 0.002
-      const high = Math.max(open, open + change) + Math.random() * p * 0.0005
-      const low = Math.min(open, open + change) - Math.random() * p * 0.0005
-      p = open + change
-      initial.push({ time: now - i * 1000, price: p, open, high, low, close: p })
+      const close = open + change
+      const high = Math.max(open, close) + Math.random() * p * 0.0005
+      const low = Math.min(open, close) - Math.random() * p * 0.0005
+      p = close
+      initial.push({ time: now - i * 1000, price: p, open, high, low, close })
     }
     priceRef.current = p
     setCurrentPrice(p)
     setPriceHistory([...initial])
+    setPriceChange(0)
   }, [selectedPair])
 
   // ── Live price updates ──
@@ -145,49 +162,109 @@ export default function TradingPage() {
     return () => clearInterval(interval)
   }, [selectedPair])
 
-  // ── Countdown + trade resolution ──
+  // ── Trade countdown + resolution ──
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveTrades(prev => {
         const updated: ActiveTrade[] = []
+
         for (const trade of prev) {
+          // Already resolved — keep briefly then remove
           if (trade.result !== 'PENDING') {
-            // Keep resolved trades for 3 more seconds then remove
-            updated.push({ ...trade, timeLeft: trade.timeLeft - 1 })
+            const next = { ...trade, timeLeft: trade.timeLeft - 1 }
+            if (next.timeLeft > -3) updated.push(next)
             continue
           }
 
           const newTimeLeft = trade.timeLeft - 1
 
           if (newTimeLeft <= 0) {
+            // Determine outcome
             const isWin = trade.direction === 'BUY'
               ? priceRef.current > trade.entryPrice
               : priceRef.current < trade.entryPrice
 
             const finalProfit = isWin
-              ? trade.amount * (trade.payout / 100)
+              ? parseFloat((trade.amount * (trade.payout / 100)).toFixed(2))
               : -trade.amount
 
-            setBalance(b => b + finalProfit)
-            setSessionPnl(p => p + finalProfit)
+            // Update local session state
+            setSessionPnl(p => parseFloat((p + finalProfit).toFixed(2)))
+            if (isWin) setTotalWins(w => w + 1)
+            else setTotalLosses(l => l + 1)
 
-            if (isWin) {
-              setTotalWins(w => w + 1)
-              setNotification({ msg: `🎉 WIN! +$${finalProfit.toFixed(2)} on ${trade.pair}`, type: 'win' })
-            } else {
-              setTotalLosses(l => l + 1)
-              setNotification({ msg: `📉 LOSS -$${trade.amount.toFixed(2)} on ${trade.pair}`, type: 'loss' })
+            // Show notification
+            if (notifTimeout.current) clearTimeout(notifTimeout.current)
+            setNotification({
+              msg: isWin
+                ? `🎉 WIN! +$${finalProfit.toFixed(2)} on ${trade.pair}`
+                : `📉 LOSS -$${trade.amount.toFixed(2)} on ${trade.pair}`,
+              type: isWin ? 'win' : 'loss',
+            })
+            notifTimeout.current = setTimeout(() => setNotification(null), 3500)
+
+            // ── Write to Supabase ──
+            const uid = userIdRef.current
+            if (uid) {
+              const supabase = createClient()
+
+              // Update balance
+              supabase.from('balances')
+                .select('total_balance, total_pnl')
+                .eq('user_id', uid)
+                .single()
+                .then(({ data: bal }) => {
+                  const newBalance = Math.max(0, (bal?.total_balance || 0) + finalProfit)
+                  const newPnl = (bal?.total_pnl || 0) + finalProfit
+
+                  supabase.from('balances').update({
+                    total_balance: newBalance,
+                    total_pnl: newPnl,
+                    updated_at: new Date().toISOString(),
+                  }).eq('user_id', uid).then(() => {
+                    balanceRef.current = newBalance
+                  })
+                })
+
+              // Update trade record
+              supabase.from('trades')
+                .update({
+                  profit: finalProfit,
+                  status: 'closed',
+                  exit_price: priceRef.current,
+                  result: isWin ? 'WIN' : 'LOSS',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', uid)
+                .eq('asset', trade.pair)
+                .eq('status', 'open')
+                .then(() => {})
+
+              // Send notification to user
+              supabase.from('notifications').insert({
+                user_id: uid,
+                title: isWin
+                  ? `🎉 Trade Won! +$${finalProfit.toFixed(2)}`
+                  : `📉 Trade Closed -$${trade.amount.toFixed(2)}`,
+                message: `Your ${trade.direction} trade on ${trade.pair} ${isWin
+                  ? `was profitable! You earned +$${finalProfit.toFixed(2)}.`
+                  : `closed at a loss of -$${trade.amount.toFixed(2)}.`} Your balance has been updated.`,
+                type: isWin ? 'success' : 'info',
+                is_read: false,
+                recipient_role: 'user',
+              }).then(() => {})
             }
-            setTimeout(() => setNotification(null), 3500)
 
             updated.push({ ...trade, timeLeft: -3, result: isWin ? 'WIN' : 'LOSS' })
           } else {
             updated.push({ ...trade, timeLeft: newTimeLeft })
           }
         }
+
         return updated.filter(t => t.timeLeft > -3)
       })
     }, 1000)
+
     return () => clearInterval(interval)
   }, [])
 
@@ -208,15 +285,12 @@ export default function TradingPage() {
     const toX = (i: number) => (i / (priceHistory.length - 1)) * w
     const toY = (p: number) => h - ((p - minP) / range) * (h - 20) - 10
 
-    // Grid
+    // Grid lines
     ctx.strokeStyle = 'rgba(255,255,255,0.04)'
     ctx.lineWidth = 1
     for (let i = 0; i <= 4; i++) {
       const y = (h / 4) * i
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(w, y)
-      ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
       const price = maxP - (range * i / 4)
       ctx.fillStyle = 'rgba(255,255,255,0.25)'
       ctx.font = '10px monospace'
@@ -228,10 +302,10 @@ export default function TradingPage() {
     const gradColor = isUp ? 'rgba(63,185,80,' : 'rgba(248,81,73,'
 
     if (chartType === 'line') {
+      // Area fill
       const gradient = ctx.createLinearGradient(0, 0, 0, h)
       gradient.addColorStop(0, gradColor + '0.3)')
       gradient.addColorStop(1, gradColor + '0)')
-
       ctx.beginPath()
       ctx.moveTo(toX(0), toY(priceHistory[0].price))
       priceHistory.forEach((p, i) => ctx.lineTo(toX(i), toY(p.price)))
@@ -241,6 +315,7 @@ export default function TradingPage() {
       ctx.fillStyle = gradient
       ctx.fill()
 
+      // Line
       ctx.beginPath()
       ctx.moveTo(toX(0), toY(priceHistory[0].price))
       priceHistory.forEach((p, i) => ctx.lineTo(toX(i), toY(p.price)))
@@ -249,38 +324,27 @@ export default function TradingPage() {
       ctx.lineJoin = 'round'
       ctx.stroke()
 
+      // Current price dot + pulse
       const lastX = toX(priceHistory.length - 1)
       const lastY = toY(priceHistory[priceHistory.length - 1].price)
-      ctx.beginPath()
-      ctx.arc(lastX, lastY, 5, 0, Math.PI * 2)
-      ctx.fillStyle = lineColor
-      ctx.fill()
-      ctx.beginPath()
-      ctx.arc(lastX, lastY, 10, 0, Math.PI * 2)
-      ctx.fillStyle = gradColor + '0.25)'
-      ctx.fill()
+      ctx.beginPath(); ctx.arc(lastX, lastY, 10, 0, Math.PI * 2)
+      ctx.fillStyle = gradColor + '0.2)'; ctx.fill()
+      ctx.beginPath(); ctx.arc(lastX, lastY, 5, 0, Math.PI * 2)
+      ctx.fillStyle = lineColor; ctx.fill()
 
-      // Dashed current price line
-      ctx.beginPath()
-      ctx.setLineDash([4, 4])
-      ctx.moveTo(0, lastY)
-      ctx.lineTo(w, lastY)
-      ctx.strokeStyle = gradColor + '0.4)'
-      ctx.lineWidth = 1
-      ctx.stroke()
+      // Dashed horizontal price line
+      ctx.beginPath(); ctx.setLineDash([4, 4])
+      ctx.moveTo(0, lastY); ctx.lineTo(w, lastY)
+      ctx.strokeStyle = gradColor + '0.4)'; ctx.lineWidth = 1; ctx.stroke()
       ctx.setLineDash([])
     } else {
+      // Candle chart
       const cw = Math.max(2, (w / priceHistory.length) - 1)
       priceHistory.forEach((p, i) => {
         const x = toX(i)
         const c = p.close >= p.open ? '#3fb950' : '#f85149'
-        ctx.strokeStyle = c
-        ctx.fillStyle = c
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(x, toY(p.high))
-        ctx.lineTo(x, toY(p.low))
-        ctx.stroke()
+        ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(x, toY(p.high)); ctx.lineTo(x, toY(p.low)); ctx.stroke()
         const bTop = toY(Math.max(p.open, p.close))
         const bH = Math.max(1, Math.abs(toY(p.open) - toY(p.close)))
         ctx.fillRect(x - cw / 2, bTop, cw, bH)
@@ -290,31 +354,64 @@ export default function TradingPage() {
     // Active trade entry lines
     activeTrades.filter(t => t.result === 'PENDING').forEach(trade => {
       const entryY = toY(trade.entryPrice)
-      ctx.beginPath()
-      ctx.setLineDash([6, 3])
-      ctx.moveTo(0, entryY)
-      ctx.lineTo(w, entryY)
-      ctx.strokeStyle = trade.direction === 'BUY' ? 'rgba(63,185,80,0.6)' : 'rgba(248,81,73,0.6)'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
+      ctx.beginPath(); ctx.setLineDash([6, 3])
+      ctx.moveTo(0, entryY); ctx.lineTo(w, entryY)
+      ctx.strokeStyle = trade.direction === 'BUY' ? 'rgba(63,185,80,0.7)' : 'rgba(248,81,73,0.7)'
+      ctx.lineWidth = 1.5; ctx.stroke()
       ctx.setLineDash([])
       ctx.fillStyle = trade.direction === 'BUY' ? '#3fb950' : '#f85149'
       ctx.font = 'bold 10px monospace'
-      ctx.fillText(`${trade.direction} $${trade.amount}`, 6, entryY - 4)
+      ctx.fillText(`${trade.direction} $${trade.amount}`, 8, entryY - 5)
     })
   }, [priceHistory, activeTrades, chartType])
 
   // ── Place trade ──
   const placeTrade = useCallback(async (direction: TradeDirection) => {
+    const uid = userIdRef.current
     const amt = customAmount ? parseFloat(customAmount) : investment
-    if (!userId || !amt || amt <= 0 || amt > balance) {
+    if (!uid || !amt || amt <= 0) return
+
+    if (amt > balanceRef.current) {
       setNotification({ msg: '⚠ Insufficient balance', type: 'info' })
       setTimeout(() => setNotification(null), 2000)
       return
     }
 
-    setBalance(b => b - amt)
+    // Deduct balance immediately in UI
+    setBalance(b => {
+      const nb = Math.max(0, b - amt)
+      balanceRef.current = nb
+      return nb
+    })
 
+    const supabase = createClient()
+
+    // Deduct from Supabase immediately
+    const { data: bal } = await supabase
+      .from('balances')
+      .select('total_balance, available_balance, total_pnl')
+      .eq('user_id', uid)
+      .single()
+
+    await supabase.from('balances').update({
+      total_balance: Math.max(0, (bal?.total_balance || 0) - amt),
+      available_balance: Math.max(0, (bal?.available_balance || 0) - amt),
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', uid)
+
+    // Insert trade record
+    await supabase.from('trades').insert({
+      user_id: uid,
+      asset: selectedPair.symbol,
+      direction,
+      amount: amt,
+      entry_price: priceRef.current,
+      leverage: 1,
+      status: 'open',
+      result: 'PENDING',
+    })
+
+    // Add to active trades
     const newTrade: ActiveTrade = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       pair: selectedPair.symbol,
@@ -328,23 +425,12 @@ export default function TradingPage() {
     }
 
     setActiveTrades(prev => [...prev, newTrade])
+  }, [investment, customAmount, selectedPair, timeframe, payout])
 
-    const supabase = createClient()
-    await supabase.from('trades').insert({
-      user_id: userId,
-      asset: selectedPair.symbol,
-      direction,
-      amount: amt,
-      entry_price: priceRef.current,
-      leverage: 1,
-      status: 'open',
-    })
-  }, [userId, investment, customAmount, balance, selectedPair, timeframe, payout])
-
+  const pendingTrades = activeTrades.filter(t => t.result === 'PENDING')
   const finalAmount = customAmount ? parseFloat(customAmount) || 0 : investment
   const potentialProfit = finalAmount * (payout / 100)
   const winRate = totalWins + totalLosses > 0 ? Math.round((totalWins / (totalWins + totalLosses)) * 100) : 0
-  const pendingTrades = activeTrades.filter(t => t.result === 'PENDING')
   const filteredPairs = category === 'All' ? PAIRS : PAIRS.filter(p => p.category === category)
 
   return (
@@ -371,17 +457,19 @@ export default function TradingPage() {
 
         {/* Chart type */}
         <div style={{ display: 'flex', gap: 3, background: '#161b22', border: '1px solid #21262d', borderRadius: 8, padding: 3 }}>
-          {[{ id: 'line', label: '📈' }, { id: 'candle', label: '🕯' }].map(t => (
+          {[{ id: 'line', l: '📈' }, { id: 'candle', l: '🕯' }].map(t => (
             <button key={t.id} onClick={() => setChartType(t.id as 'line' | 'candle')}
               style={{ padding: '5px 10px', borderRadius: 6, border: 'none', background: chartType === t.id ? '#C9A84C' : 'transparent', color: chartType === t.id ? '#060a0f' : '#8b949e', fontSize: 14, cursor: 'pointer', fontFamily: 'monospace' }}>
-              {t.label}
+              {t.l}
             </button>
           ))}
         </div>
 
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase' }}>Balance</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#C9A84C' }}>${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#C9A84C' }}>
+            ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </div>
         </div>
 
         <Link href="/dashboard" style={{ textDecoration: 'none' }}>
@@ -390,16 +478,16 @@ export default function TradingPage() {
       </div>
 
       {/* ── SESSION STATS ── */}
-      <div style={{ display: 'flex', gap: 0, padding: '8px 14px', background: '#0a0e14', borderBottom: '1px solid #161b22', flexShrink: 0 }}>
+      <div style={{ display: 'flex', padding: '6px 14px', background: '#0a0e14', borderBottom: '1px solid #161b22', flexShrink: 0 }}>
         {[
           { l: 'P&L', v: `${sessionPnl >= 0 ? '+' : ''}$${sessionPnl.toFixed(2)}`, c: sessionPnl >= 0 ? '#3fb950' : '#f85149' },
           { l: 'Wins', v: totalWins, c: '#3fb950' },
           { l: 'Losses', v: totalLosses, c: '#f85149' },
           { l: 'Win Rate', v: `${winRate}%`, c: winRate >= 50 ? '#3fb950' : '#f85149' },
           { l: 'Payout', v: `${payout}%`, c: '#C9A84C' },
-          { l: 'Active', v: pendingTrades.length, c: '#F7A600' },
+          { l: 'Active', v: pendingTrades.length, c: pendingTrades.length > 0 ? '#F7A600' : '#484f58' },
         ].map((s, i) => (
-          <div key={s.l} style={{ flex: 1, textAlign: 'center', borderRight: i < 5 ? '1px solid #161b22' : 'none', padding: '0 4px' }}>
+          <div key={s.l} style={{ flex: 1, textAlign: 'center', borderRight: i < 5 ? '1px solid #161b22' : 'none', padding: '4px 0' }}>
             <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', marginBottom: 2 }}>{s.l}</div>
             <div style={{ fontSize: 12, fontWeight: 800, color: s.c }}>{s.v}</div>
           </div>
@@ -408,59 +496,59 @@ export default function TradingPage() {
 
       {/* ── CHART ── */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0 }}>
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={400}
-          style={{ width: '100%', height: '100%', display: 'block' }}
-        />
+        <canvas ref={canvasRef} width={800} height={400}
+          style={{ width: '100%', height: '100%', display: 'block' }} />
 
-        {/* Trade notification */}
+        {/* WIN/LOSS notification */}
         {notification && (
           <div style={{
             position: 'absolute', top: 16, left: '50%',
             transform: 'translateX(-50%)',
-            background: notification.type === 'win' ? 'rgba(63,185,80,0.95)' : notification.type === 'loss' ? 'rgba(248,81,73,0.95)' : 'rgba(201,168,76,0.95)',
-            color: '#fff', padding: '12px 24px', borderRadius: 30,
-            fontSize: 14, fontWeight: 800, fontFamily: 'monospace',
-            zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            whiteSpace: 'nowrap', animation: 'popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+            background: notification.type === 'win'
+              ? 'rgba(63,185,80,0.97)'
+              : notification.type === 'loss'
+                ? 'rgba(248,81,73,0.97)'
+                : 'rgba(201,168,76,0.97)',
+            color: '#fff',
+            padding: '12px 28px',
+            borderRadius: 30,
+            fontSize: 15, fontWeight: 800, fontFamily: 'monospace',
+            zIndex: 100,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            whiteSpace: 'nowrap',
+            animation: 'popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)',
           }}>
-            <style>{`@keyframes popIn{from{transform:translateX(-50%) scale(0.8);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}`}</style>
+            <style>{`@keyframes popIn{from{transform:translateX(-50%) scale(0.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}`}</style>
             {notification.msg}
           </div>
         )}
 
-        {/* Active trade cards overlay */}
+        {/* Active trade cards */}
         {pendingTrades.length > 0 && (
           <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {pendingTrades.map(trade => {
-              const currentPnl = (priceRef.current - trade.entryPrice) / trade.entryPrice * trade.amount * (trade.direction === 'BUY' ? 1 : -1)
-              const isWinning = currentPnl >= 0
+              const pnl = (priceRef.current - trade.entryPrice) / trade.entryPrice * trade.amount * (trade.direction === 'BUY' ? 1 : -1)
+              const isWinning = pnl >= 0
+              const progress = ((trade.duration - trade.timeLeft) / trade.duration) * 100
+
               return (
-                <div key={trade.id} style={{ background: 'rgba(0,0,0,0.88)', border: `1px solid ${trade.direction === 'BUY' ? 'rgba(63,185,80,0.5)' : 'rgba(248,81,73,0.5)'}`, borderRadius: 12, padding: '10px 14px', minWidth: 150 }}>
+                <div key={trade.id} style={{ background: 'rgba(6,10,15,0.94)', border: `1px solid ${trade.direction === 'BUY' ? 'rgba(63,185,80,0.5)' : 'rgba(248,81,73,0.5)'}`, borderRadius: 12, padding: '10px 14px', minWidth: 160 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: trade.direction === 'BUY' ? '#3fb950' : '#f85149' }}>
                       {trade.direction === 'BUY' ? '▲ BUY' : '▼ SELL'}
                     </span>
                     <span style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3', fontVariantNumeric: 'tabular-nums' }}>
-                      {String(Math.floor(trade.timeLeft / 60)).padStart(2, '0')}:{String(Math.max(0, trade.timeLeft) % 60).padStart(2, '0')}
+                      {String(Math.floor(Math.max(0, trade.timeLeft) / 60)).padStart(2, '0')}:{String(Math.max(0, trade.timeLeft) % 60).padStart(2, '0')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
                     <span style={{ color: '#484f58' }}>${trade.amount} · {trade.pair}</span>
                     <span style={{ color: isWinning ? '#3fb950' : '#f85149', fontWeight: 700 }}>
-                      {isWinning ? '+' : ''}${currentPnl.toFixed(2)}
+                      {isWinning ? '+' : ''}${pnl.toFixed(2)}
                     </span>
                   </div>
                   <div style={{ height: 3, background: '#161b22', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${((trade.duration - trade.timeLeft) / trade.duration) * 100}%`,
-                      background: trade.direction === 'BUY' ? '#3fb950' : '#f85149',
-                      borderRadius: 2,
-                      transition: 'width 1s linear',
-                    }} />
+                    <div style={{ width: `${progress}%`, height: '100%', background: trade.direction === 'BUY' ? '#3fb950' : '#f85149', borderRadius: 2, transition: 'width 1s linear' }} />
                   </div>
                 </div>
               )
@@ -488,24 +576,17 @@ export default function TradingPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: 10, color: '#484f58', textTransform: 'uppercase' }}>Investment:</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                onClick={() => setCustomAmount(prev => String(Math.max(1, parseFloat(prev || String(investment)) - 1)))}
+              <button onClick={() => setCustomAmount(p => String(Math.max(1, parseFloat(p || String(investment)) - 1)))}
                 style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #21262d', background: '#161b22', color: '#8b949e', cursor: 'pointer', fontSize: 16, fontFamily: 'monospace' }}>−</button>
-              <input
-                type="number"
-                value={customAmount}
-                onChange={e => setCustomAmount(e.target.value)}
+              <input type="number" value={customAmount} onChange={e => setCustomAmount(e.target.value)}
                 placeholder={`$${investment}`}
                 style={{ width: 80, background: '#161b22', border: '1px solid #21262d', borderRadius: 6, padding: '5px 8px', color: '#C9A84C', fontSize: 13, fontWeight: 800, outline: 'none', fontFamily: 'monospace', textAlign: 'center' }}
                 onFocus={e => e.target.style.borderColor = '#C9A84C'}
-                onBlur={e => e.target.style.borderColor = '#21262d'}
-              />
-              <button
-                onClick={() => setCustomAmount(prev => String(parseFloat(prev || String(investment)) + 1))}
+                onBlur={e => e.target.style.borderColor = '#21262d'} />
+              <button onClick={() => setCustomAmount(p => String(parseFloat(p || String(investment)) + 1))}
                 style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #21262d', background: '#161b22', color: '#8b949e', cursor: 'pointer', fontSize: 16, fontFamily: 'monospace' }}>+</button>
             </div>
           </div>
-
           <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
             {AMOUNTS.map(amt => (
               <button key={amt} onClick={() => { setInvestment(amt); setCustomAmount('') }}
@@ -571,8 +652,7 @@ export default function TradingPage() {
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {filteredPairs.map((pair, i) => (
-                <div key={pair.symbol}
-                  onClick={() => { setSelectedPair(pair); setShowPairs(false) }}
+                <div key={pair.symbol} onClick={() => { setSelectedPair(pair); setShowPairs(false) }}
                   style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', borderBottom: i < filteredPairs.length - 1 ? '1px solid #161b22' : 'none', cursor: 'pointer', background: selectedPair.symbol === pair.symbol ? 'rgba(201,168,76,0.06)' : 'transparent' }}>
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${pair.color}18`, border: `1px solid ${pair.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: pair.color, marginRight: 14, flexShrink: 0 }}>
                     {pair.icon}
