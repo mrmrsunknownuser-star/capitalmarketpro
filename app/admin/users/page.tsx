@@ -13,15 +13,18 @@ export default function AdminUsersPage() {
   const [actionLoading, setActionLoading] = useState(false)
 
   const fetchUsers = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setUsers(data || [])
-    setLoading(false)
-  }
+  setLoading(true)
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .neq('role', 'admin')
+    .order('created_at', { ascending: false })
+
+  if (error) console.error('Users error:', error)
+  setUsers(data || [])
+  setLoading(false)
+}
 
   useEffect(() => { fetchUsers() }, [])
 

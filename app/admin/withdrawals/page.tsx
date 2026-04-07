@@ -14,15 +14,36 @@ export default function AdminWithdrawalsPage() {
   const [search, setSearch] = useState('')
 
   const fetchWithdrawals = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('withdrawal_requests')
-      .select('*, user:users(id, email, full_name, avatar_url, btc_address)')
-      .order('created_at', { ascending: false })
-    setWithdrawals(data || [])
+  setLoading(true)
+  const supabase = createClient()
+
+  // Fetch withdrawals without join first
+  const { data: wds, error } = await supabase
+    .from('withdrawal_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Withdrawals error:', error)
     setLoading(false)
+    return
   }
+
+  // Fetch users separately
+  const wdsWithUsers = await Promise.all(
+    (wds || []).map(async wd => {
+      const { data: user } = await supabase
+        .from('users')
+        .select('id, email, full_name, avatar_url, btc_address')
+        .eq('id', wd.user_id)
+        .single()
+      return { ...wd, user }
+    })
+  )
+
+  setWithdrawals(wdsWithUsers)
+  setLoading(false)
+}
 
   useEffect(() => { fetchWithdrawals() }, [])
 

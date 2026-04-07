@@ -14,15 +14,36 @@ export default function AdminDepositsPage() {
   const [search, setSearch] = useState('')
 
   const fetchDeposits = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('deposits')
-      .select('*, user:users(id, email, full_name, avatar_url)')
-      .order('created_at', { ascending: false })
-    setDeposits(data || [])
+  setLoading(true)
+  const supabase = createClient()
+
+  // Fetch deposits without join first
+  const { data: deps, error } = await supabase
+    .from('deposits')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Deposits error:', error)
     setLoading(false)
+    return
   }
+
+  // Fetch users separately
+  const depsWithUsers = await Promise.all(
+    (deps || []).map(async dep => {
+      const { data: user } = await supabase
+        .from('users')
+        .select('id, email, full_name, avatar_url')
+        .eq('id', dep.user_id)
+        .single()
+      return { ...dep, user }
+    })
+  )
+
+  setDeposits(depsWithUsers)
+  setLoading(false)
+}
 
   useEffect(() => { fetchDeposits() }, [])
 
