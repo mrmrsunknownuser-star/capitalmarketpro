@@ -136,7 +136,8 @@ export default function AdminDepositsPage() {
     setSelected(null)
     setNote('')
     setActionLoading(false)
-    fetchDeposits()
+    // Wait for DB to update then refresh
+setTimeout(() => fetchDeposits(), 800)
   }
 
   const filtered = deposits.filter(d => {
