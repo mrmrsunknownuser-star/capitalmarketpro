@@ -5,6 +5,8 @@ import { Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/components/Toast'
 import { ThemeProvider } from '@/components/ThemeToggle'
+import ChatBubble from '@/components/ChatBubble'
+
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
