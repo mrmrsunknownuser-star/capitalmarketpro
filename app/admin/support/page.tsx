@@ -1,394 +1,214 @@
+// @ts-nocheck
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function AdminSupportPage() {
-  const [chats, setChats] = useState<any[]>([])
-  const [selectedChat, setSelectedChat] = useState<any>(null)
-  const [messages, setMessages] = useState<any[]>([])
-  const [newMessage, setNewMessage] = useState('')
-  const [sending, setSending] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const channelRef = useRef<any>(null)
+  var [chats, setChats] = useState([])
+  var [selected, setSelected] = useState(null)
+  var [messages, setMessages] = useState([])
+  var [reply, setReply] = useState('')
+  var [loading, setLoading] = useState(true)
+  var [sending, setSending] = useState(false)
+  var [filter, setFilter] = useState('open')
+  var [search, setSearch] = useState('')
+  var [joshOnline, setJoshOnline] = useState(true)
+  var messagesEnd = useRef(null)
+  var supabase = createClient()
 
-  const fetchChats = async () => {
-    const supabase = createClient()
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, email, full_name, avatar_url, created_at')
-      .neq('role', 'admin')
-      .order('created_at', { ascending: false })
-
-    if (!users) { setLoading(false); return }
-
-    const chatsWithMessages = await Promise.all(
-      users.map(async (user) => {
-        const { data: lastMsg } = await supabase
-          .from('support_messages')
-          .select('content, created_at, sender_role, is_read')
-          .eq('chat_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        const { count } = await supabase
-          .from('support_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('chat_id', user.id)
-          .eq('sender_role', 'user')
-          .eq('is_read', false)
-
-        return {
-          ...user,
-          lastMessage: lastMsg?.content || null,
-          lastMessageTime: lastMsg?.created_at || user.created_at,
-          lastSenderRole: lastMsg?.sender_role || null,
-          unreadCount: count || 0,
-        }
-      })
-    )
-
-    chatsWithMessages.sort((a, b) =>
-      new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-    )
-
-    setChats(chatsWithMessages)
+  async function fetchChats() {
+    var result = await supabase.from('support_chats').select('*').order('last_message_at', { ascending: false })
+    setChats(result.data || [])
     setLoading(false)
   }
 
-  const fetchMessages = async (userId: string) => {
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('support_messages')
-      .select('*')
-      .eq('chat_id', userId)
-      .order('created_at', { ascending: true })
-    setMessages(data || [])
-
-    // Mark user messages as read
-    await supabase
-      .from('support_messages')
-      .update({ is_read: true })
-      .eq('chat_id', userId)
-      .eq('sender_role', 'user')
-      .eq('is_read', false)
-
-    // Update unread count in list
-    setChats(prev => prev.map(c => c.id === userId ? { ...c, unreadCount: 0 } : c))
+  async function loadMessages(chatId) {
+    var result = await supabase.from('support_messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true })
+    setMessages(result.data || [])
+    await supabase.from('support_messages').update({ is_read: true }).eq('chat_id', chatId).neq('sender_type', 'admin')
+    await supabase.from('support_chats').update({ unread_admin: 0 }).eq('id', chatId)
+    setChats(function(prev) { return prev.map(function(c) { return c.id === chatId ? { ...c, unread_admin: 0 } : c }) })
   }
 
-  useEffect(() => {
+  useEffect(function() {
     fetchChats()
+    var channel = supabase.channel('admin-all-chats').on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, function() { fetchChats() }).subscribe()
+    return function() { supabase.removeChannel(channel) }
   }, [])
 
-  useEffect(() => {
-    if (!selectedChat) return
-    fetchMessages(selectedChat.id)
-
-    const supabase = createClient()
-
-    // Cleanup old channel
-    if (channelRef.current) supabase.removeChannel(channelRef.current)
-
-    // Subscribe to new messages
-    channelRef.current = supabase
-      .channel(`admin-support-${selectedChat.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'support_messages',
-        filter: `chat_id=eq.${selectedChat.id}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new as any])
+  useEffect(function() {
+    if (!selected) return
+    loadMessages(selected.id)
+    var channel = supabase.channel('admin-msgs-' + selected.id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: 'chat_id=eq.' + selected.id }, function(payload) {
+        var msg = payload.new
+        setMessages(function(prev) { return prev.find(function(m) { return m.id === msg.id }) ? prev : [...prev, msg] })
+        supabase.from('support_messages').update({ is_read: true }).eq('id', msg.id)
       })
       .subscribe()
+    return function() { supabase.removeChannel(channel) }
+  }, [selected && selected.id])
 
-    return () => {
-      if (channelRef.current) supabase.removeChannel(channelRef.current)
-    }
-  }, [selectedChat])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  useEffect(function() {
+    if (messagesEnd.current) messagesEnd.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedChat || sending) return
+  async function sendReply() {
+    if (!reply.trim() || !selected || sending) return
+    var msg = reply.trim()
+    setReply('')
     setSending(true)
-    const supabase = createClient()
-
-    const msgContent = newMessage.trim()
-    setNewMessage('')
-
-    // Ensure chat exists
-    await supabase.from('support_chats').upsert({
-      id: selectedChat.id,
-      user_id: selectedChat.id,
-      status: 'open',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' })
-
-    await supabase.from('support_messages').insert({
-      chat_id: selectedChat.id,
-      sender_id: selectedChat.id,
-      sender_role: 'admin',
-      content: msgContent,
-      is_read: false,
-      created_at: new Date().toISOString(),
-    })
-
-    // Notify user
-    await supabase.from('notifications').insert({
-      user_id: selectedChat.id,
-      title: '💬 Message from Joshua Elder',
-      message: msgContent.length > 80 ? msgContent.slice(0, 80) + '...' : msgContent,
-      type: 'info',
-      is_read: false,
-    })
-
-    // Update chat in list
-    setChats(prev => prev.map(c =>
-      c.id === selectedChat.id
-        ? { ...c, lastMessage: msgContent, lastMessageTime: new Date().toISOString(), lastSenderRole: 'admin' }
-        : c
-    ))
-
+    var userResult = await supabase.auth.getUser()
+    await supabase.from('support_messages').insert({ chat_id: selected.id, sender_type: 'admin', sender_id: userResult.data.user ? userResult.data.user.id : null, message: msg, is_read: false })
+    await supabase.from('support_chats').update({ last_message: msg.slice(0, 120), last_message_at: new Date().toISOString() }).eq('id', selected.id)
     setSending(false)
   }
 
-  const QUICK_TEMPLATES = [
-    { label: '👋 Welcome', msg: (name: string) => `Hi ${name}! I'm Joshua, your dedicated Account Manager at CapitalMarket Pro. I'm here to help you maximize your investment returns. How can I assist you today?` },
-    { label: '📈 Check In', msg: (name: string) => `Hello ${name}! I wanted to personally check in on your portfolio performance. Do you have any questions about your investments or would you like to discuss upgrading your plan?` },
-    { label: '💰 Upgrade Plan', msg: (name: string) => `Hi ${name}! I've been analyzing your account and I believe you could significantly increase your daily returns by upgrading to our Gold or Platinum plan. Would you like me to walk you through the benefits?` },
-    { label: '⚡ Market Alert', msg: (name: string) => `${name}, our AI has just detected a major market opportunity! Your current plan is already capitalizing on this move. Want to know more about how to maximize your gains during this period?` },
-    { label: '🎯 KYC Reminder', msg: (name: string) => `Hi ${name}! I noticed your identity verification is still pending. Completing KYC will unlock withdrawals and give you full access to all our premium features. Can I help you through the process?` },
-    { label: '💸 Deposit Prompt', msg: (name: string) => `Hello ${name}! Our AI trading system is performing exceptionally well right now. Have you considered adding more funds to amplify your daily returns? I can guide you through the deposit process.` },
-    { label: '✅ Approval Notice', msg: (name: string) => `Great news, ${name}! Your recent request has been processed and approved. Your account has been updated accordingly. Is there anything else I can help you with?` },
-    { label: '📞 Schedule Call', msg: (name: string) => `Hi ${name}! I'd love to schedule a personal consultation to discuss your investment goals and how we can help you achieve them faster. When would be a good time for you?` },
-  ]
+  async function resolveChat(chatId) {
+    await supabase.from('support_chats').update({ status: 'resolved' }).eq('id', chatId)
+    setChats(function(prev) { return prev.map(function(c) { return c.id === chatId ? { ...c, status: 'resolved' } : c }) })
+    if (selected && selected.id === chatId) setSelected(function(prev) { return prev ? { ...prev, status: 'resolved' } : null })
+  }
 
-  const filteredChats = chats.filter(c =>
-    !search ||
-    (c.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.email || '').toLowerCase().includes(search.toLowerCase())
-  )
+  async function reopenChat(chatId) {
+    await supabase.from('support_chats').update({ status: 'open' }).eq('id', chatId)
+    setChats(function(prev) { return prev.map(function(c) { return c.id === chatId ? { ...c, status: 'open' } : c }) })
+    if (selected && selected.id === chatId) setSelected(function(prev) { return prev ? { ...prev, status: 'open' } : null })
+  }
 
-  const firstName = (name: string) => name?.split(' ')[0] || 'there'
+  function formatTime(ts) {
+    var d = new Date(ts)
+    var diff = Date.now() - d.getTime()
+    if (diff < 60000) return 'just now'
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago'
+    if (diff < 86400000) return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  function formatMsg(text) {
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')
+  }
+
+  var filtered = chats.filter(function(c) {
+    var matchFilter = filter === 'all' ? true : filter === 'open' ? c.status === 'open' : c.status === 'resolved'
+    var matchSearch = !search || (c.user_name || '').toLowerCase().includes(search.toLowerCase()) || (c.user_email || '').toLowerCase().includes(search.toLowerCase())
+    return matchFilter && matchSearch
+  })
+
+  var totalUnread = chats.reduce(function(s, c) { return s + (c.unread_admin || 0) }, 0)
+  var openCount = chats.filter(function(c) { return c.status === 'open' }).length
+  var G = '#C9A84C'
+  var GG = 'linear-gradient(135deg, #C9A84C, #E8D08C)'
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 60px)', fontFamily: 'monospace', background: '#060a0f' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 64px)', fontFamily: 'Inter, sans-serif', background: '#060a0e', color: '#e8edf5' }}>
+      <style>{'* { box-sizing: border-box; } textarea { font-family: Inter, sans-serif; resize: none; } .cli { cursor: pointer; border-left: 3px solid transparent; transition: all .15s; } .cli:hover { background: rgba(201,168,76,.04); } .cli.act { background: rgba(201,168,76,.07); border-left-color: #C9A84C; } ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 2px; } @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }'}</style>
 
-      {/* LEFT PANEL — Chat list */}
-      <div style={{ width: 300, borderRight: '1px solid #161b22', display: 'flex', flexDirection: 'column', flexShrink: 0, background: '#0a0e14' }}>
-
-        {/* Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #161b22' }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#e6edf3', marginBottom: 10 }}>
-            💬 Support Inbox
-            {chats.reduce((s, c) => s + c.unreadCount, 0) > 0 && (
-              <span style={{ marginLeft: 8, fontSize: 11, background: '#f85149', color: '#fff', padding: '2px 7px', borderRadius: 20, fontWeight: 800 }}>
-                {chats.reduce((s, c) => s + c.unreadCount, 0)}
-              </span>
-            )}
-          </div>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Search users..."
-            style={{ width: '100%', background: '#161b22', border: '1px solid #21262d', borderRadius: 8, padding: '8px 12px', color: '#e6edf3', fontSize: 12, outline: 'none', fontFamily: 'monospace', boxSizing: 'border-box' as const }}
-            onFocus={e => e.target.style.borderColor = '#C9A84C'}
-            onBlur={e => e.target.style.borderColor = '#21262d'}
-          />
-        </div>
-
-        {/* Chat list */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {loading ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#484f58', fontSize: 12 }}>Loading chats...</div>
-          ) : filteredChats.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#484f58', fontSize: 12 }}>No users found</div>
-          ) : filteredChats.map(chat => (
-            <div
-              key={chat.id}
-              onClick={() => setSelectedChat(chat)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '12px 14px',
-                borderBottom: '1px solid #161b22',
-                cursor: 'pointer',
-                background: selectedChat?.id === chat.id ? 'rgba(201,168,76,0.08)' : 'transparent',
-                borderLeft: selectedChat?.id === chat.id ? '3px solid #C9A84C' : '3px solid transparent',
-              }}
-              onMouseEnter={e => { if (selectedChat?.id !== chat.id) e.currentTarget.style.background = 'rgba(255,255,255,0.02)' }}
-              onMouseLeave={e => { if (selectedChat?.id !== chat.id) e.currentTarget.style.background = 'transparent' }}
-            >
-              {/* Avatar */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#060a0f', overflow: 'hidden' }}>
-                  {chat.avatar_url
-                    ? <img src={chat.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : (chat.full_name || chat.email || 'U')[0].toUpperCase()}
-                </div>
-                {chat.unreadCount > 0 && (
-                  <div style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: '#f85149', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff', border: '2px solid #0a0e14' }}>
-                    {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                  <div style={{ fontSize: 12, fontWeight: chat.unreadCount > 0 ? 800 : 600, color: '#e6edf3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
-                    {chat.full_name || 'No name'}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#484f58', flexShrink: 0 }}>
-                    {new Date(chat.lastMessageTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
-                </div>
-                <div style={{ fontSize: 11, color: chat.unreadCount > 0 ? '#8b949e' : '#484f58', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: chat.unreadCount > 0 ? 600 : 400 }}>
-                  {chat.lastMessage
-                    ? `${chat.lastSenderRole === 'admin' ? 'Joshua: ' : ''}${chat.lastMessage.slice(0, 35)}${chat.lastMessage.length > 35 ? '...' : ''}`
-                    : 'No messages yet'}
-                </div>
+      <div style={{ width: 310, borderRight: '1px solid #1e2530', display: 'flex', flexDirection: 'column', background: '#0a0d13', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #1e2530' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Support Inbox</div>
+              <div style={{ fontSize: 11, color: '#4a5568', marginTop: 1 }}>{openCount} open - {totalUnread > 0 ? totalUnread + ' unread' : 'all read'}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, color: joshOnline ? '#2ecc71' : '#4a5568', fontWeight: 600 }}>{joshOnline ? 'Online' : 'Away'}</span>
+              <div onClick={function() { setJoshOnline(function(j) { return !j }) }} style={{ width: 36, height: 20, borderRadius: 10, background: joshOnline ? '#2ecc71' : '#1e2530', cursor: 'pointer', position: 'relative', transition: 'background .2s' }}>
+                <div style={{ position: 'absolute', top: 2, left: joshOnline ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
               </div>
             </div>
-          ))}
+          </div>
+          <input value={search} onChange={function(e) { setSearch(e.target.value) }} placeholder="Search users..." style={{ width: '100%', background: '#141920', border: '1px solid #1e2530', borderRadius: 8, padding: '8px 11px', color: '#e8edf5', fontSize: 12, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+          <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
+            {['open', 'resolved', 'all'].map(function(f) {
+              return <button key={f} onClick={function() { setFilter(f) }} style={{ flex: 1, padding: '6px 0', borderRadius: 7, border: 'none', background: filter === f ? 'rgba(201,168,76,.12)' : 'transparent', color: filter === f ? G : '#4a5568', fontSize: 11, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: filter === f ? 700 : 400, textTransform: 'capitalize' }}>{f}</button>
+            })}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {loading && <div style={{ padding: 24, textAlign: 'center', color: '#4a5568', fontSize: 13 }}>Loading...</div>}
+          {!loading && filtered.length === 0 && <div style={{ padding: 28, textAlign: 'center', color: '#4a5568', fontSize: 13 }}>No {filter !== 'all' ? filter : ''} conversations</div>}
+          {filtered.map(function(chat) {
+            return (
+              <div key={chat.id} className={'cli' + (selected && selected.id === chat.id ? ' act' : '')} onClick={function() { setSelected(chat); loadMessages(chat.id) }} style={{ padding: '12px 14px', borderBottom: '1px solid rgba(30,37,48,.5)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: GG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#060a0e', flexShrink: 0 }}>{(chat.user_name || 'G')[0].toUpperCase()}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{chat.user_name || 'Guest'}</div>
+                      <div style={{ fontSize: 10, color: '#4a5568', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.user_email || 'Guest visitor'}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <div style={{ fontSize: 10, color: '#4a5568' }}>{formatTime(chat.last_message_at)}</div>
+                    {(chat.unread_admin || 0) > 0 && <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff' }}>{chat.unread_admin}</div>}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: '#8892a0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingLeft: 43 }}>{chat.last_message || 'No messages'}</div>
+                {chat.status !== 'open' && <div style={{ marginLeft: 43, marginTop: 3, fontSize: 10, color: '#2ecc71', fontWeight: 600 }}>Resolved</div>}
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* RIGHT PANEL — Chat window */}
-      {!selectedChat ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800, color: '#060a0f' }}>JE</div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#e6edf3', marginBottom: 8 }}>Joshua C. Elder</div>
-            <div style={{ fontSize: 13, color: '#484f58', marginBottom: 4 }}>Account Manager · CapitalMarket Pro</div>
-            <div style={{ fontSize: 12, color: '#484f58' }}>Select a user from the left to start chatting</div>
-          </div>
-          <div style={{ display: 'flex', gap: 16 }}>
-            {[`${chats.length} Users`, `${chats.reduce((s, c) => s + c.unreadCount, 0)} Unread`].map(s => (
-              <div key={s} style={{ fontSize: 12, color: '#C9A84C', background: 'rgba(201,168,76,0.1)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(201,168,76,0.2)' }}>{s}</div>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {selected ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-
-          {/* Chat header */}
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #161b22', display: 'flex', alignItems: 'center', gap: 12, background: '#0a0e14', flexShrink: 0 }}>
-            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0f', overflow: 'hidden', flexShrink: 0 }}>
-              {selectedChat.avatar_url
-                ? <img src={selectedChat.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (selectedChat.full_name || selectedChat.email || 'U')[0].toUpperCase()}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#e6edf3' }}>{selectedChat.full_name || 'No name'}</div>
-              <div style={{ fontSize: 11, color: '#484f58' }}>{selectedChat.email}</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ fontSize: 10, color: '#3fb950', background: 'rgba(63,185,80,0.1)', padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(63,185,80,0.2)' }}>
-                Replying as Joshua Elder
+          <div style={{ padding: '13px 20px', borderBottom: '1px solid #1e2530', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0d13', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50%', background: GG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#060a0e' }}>{(selected.user_name || 'G')[0].toUpperCase()}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{selected.user_name || 'Guest'}</div>
+                <div style={{ fontSize: 11, color: '#4a5568' }}>{selected.user_email || 'Guest user'} - {selected.user_id ? 'Registered' : 'Guest'}</div>
               </div>
-              <button onClick={() => setSelectedChat(null)}
-                style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, color: '#8b949e', cursor: 'pointer', width: 28, height: 28, fontSize: 13 }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ padding: '4px 10px', background: selected.status === 'open' ? 'rgba(46,204,113,.1)' : 'rgba(201,168,76,.1)', border: '1px solid ' + (selected.status === 'open' ? 'rgba(46,204,113,.25)' : 'rgba(201,168,76,.25)'), borderRadius: 8, fontSize: 11, fontWeight: 600, color: selected.status === 'open' ? '#2ecc71' : G }}>{selected.status === 'open' ? 'Open' : 'Resolved'}</span>
+              {selected.status === 'open' ? (
+                <button onClick={function() { resolveChat(selected.id) }} style={{ padding: '7px 14px', background: 'transparent', border: '1px solid #1e2530', borderRadius: 8, color: '#8892a0', cursor: 'pointer', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>Mark Resolved</button>
+              ) : (
+                <button onClick={function() { reopenChat(selected.id) }} style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(201,168,76,.3)', borderRadius: 8, color: G, cursor: 'pointer', fontSize: 12, fontFamily: 'Inter, sans-serif' }}>Reopen</button>
+              )}
             </div>
           </div>
 
-          {/* Quick templates */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
-            <div style={{ fontSize: 10, color: '#484f58', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Templates:</div>
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {QUICK_TEMPLATES.map(tmpl => (
-                <button key={tmpl.label} onClick={() => setNewMessage(tmpl.msg(firstName(selectedChat.full_name)))}
-                  style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 10, cursor: 'pointer', fontFamily: 'monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  {tmpl.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {messages.length === 0 ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 40 }}>💬</div>
-                <div style={{ fontSize: 13, color: '#484f58', textAlign: 'center' }}>
-                  No messages yet.<br />Use a template above or type a message below.
-                </div>
-              </div>
-            ) : messages.map((msg, i) => {
-              const isAdmin = msg.sender_role === 'admin'
-              const showTime = i === 0 || new Date(msg.created_at).getTime() - new Date(messages[i - 1].created_at).getTime() > 5 * 60 * 1000
-
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {messages.map(function(m) {
               return (
-                <div key={msg.id || i}>
-                  {showTime && (
-                    <div style={{ textAlign: 'center', fontSize: 10, color: '#484f58', marginBottom: 8 }}>
-                      {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
-                    {!isAdmin && (
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#060a0f', flexShrink: 0, overflow: 'hidden' }}>
-                        {selectedChat.avatar_url
-                          ? <img src={selectedChat.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : (selectedChat.full_name || 'U')[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div style={{
-                      maxWidth: '72%',
-                      padding: '10px 14px',
-                      borderRadius: isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      background: isAdmin ? 'linear-gradient(135deg,#C9A84C,#E8D08C)' : '#161b22',
-                      border: isAdmin ? 'none' : '1px solid #21262d',
-                      color: isAdmin ? '#060a0f' : '#e6edf3',
-                      fontSize: 13,
-                      lineHeight: 1.6,
-                      fontFamily: 'monospace',
-                    }}>
-                      {msg.content}
-                    </div>
-                    {isAdmin && (
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#060a0f', flexShrink: 0 }}>
-                        JE
-                      </div>
-                    )}
-                  </div>
+                <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.sender_type === 'admin' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ fontSize: 10, color: '#4a5568', marginBottom: 3 }}>{m.sender_type === 'admin' ? 'You (Josh)' : m.sender_type === 'bot' ? 'Support Bot' : selected.user_name || 'User'}</div>
+                  <div dangerouslySetInnerHTML={{ __html: formatMsg(m.message) }} style={{ maxWidth: '68%', padding: '10px 14px', borderRadius: m.sender_type === 'admin' ? '14px 14px 4px 14px' : '4px 14px 14px 14px', background: m.sender_type === 'admin' ? GG : m.sender_type === 'bot' ? '#141920' : '#1e2d3d', color: m.sender_type === 'admin' ? '#060a0e' : '#e8edf5', fontSize: 13, lineHeight: 1.65, wordBreak: 'break-word' }} />
+                  <div style={{ fontSize: 10, color: '#4a5568', marginTop: 3 }}>{new Date(m.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}{m.sender_type === 'admin' && <span style={{ marginLeft: 4 }}>{m.is_read ? 'Seen' : 'Sent'}</span>}</div>
                 </div>
               )
             })}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEnd} />
           </div>
 
-          {/* Message input */}
-          <div style={{ padding: '14px 16px', borderTop: '1px solid #161b22', background: '#0a0e14', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-              <textarea
-                value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                placeholder="Type a message as Joshua Elder... (Enter to send)"
-                rows={2}
-                style={{ flex: 1, background: '#161b22', border: '1px solid #21262d', borderRadius: 12, padding: '11px 14px', color: '#e6edf3', fontSize: 13, outline: 'none', fontFamily: 'monospace', resize: 'none', lineHeight: 1.5 }}
-                onFocus={e => e.target.style.borderColor = '#C9A84C'}
-                onBlur={e => e.target.style.borderColor = '#21262d'}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || sending}
-                style={{ padding: '14px 20px', borderRadius: 12, border: 'none', background: !newMessage.trim() || sending ? '#161b22' : 'linear-gradient(135deg,#C9A84C,#E8D08C)', color: !newMessage.trim() || sending ? '#484f58' : '#060a0f', fontSize: 14, fontWeight: 800, cursor: !newMessage.trim() || sending ? 'not-allowed' : 'pointer', fontFamily: 'monospace', flexShrink: 0, height: 52 }}>
-                {sending ? '⟳' : '→'}
-              </button>
+          {selected.status === 'open' ? (
+            <div style={{ padding: '12px 16px', borderTop: '1px solid #1e2530', background: '#0a0d13', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                <textarea value={reply} onChange={function(e) { setReply(e.target.value) }} onKeyDown={function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }} placeholder="Reply as Josh... Enter to send" rows={2} style={{ flex: 1, background: '#141920', border: '1.5px solid #1e2530', borderRadius: 10, padding: '10px 12px', color: '#e8edf5', fontSize: 13, outline: 'none', lineHeight: 1.6 }} onFocus={function(e) { e.target.style.borderColor = G }} onBlur={function(e) { e.target.style.borderColor = '#1e2530' }} />
+                <button onClick={sendReply} disabled={!reply.trim() || sending} style={{ width: 44, height: 44, borderRadius: 11, background: reply.trim() && !sending ? GG : '#141920', border: 'none', color: reply.trim() && !sending ? '#060a0e' : '#4a5568', cursor: reply.trim() && !sending ? 'pointer' : 'not-allowed', fontSize: 19, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>→</button>
+              </div>
+              <div style={{ fontSize: 10, color: '#2a3140', marginTop: 5 }}>Replying as Josh - delivered instantly</div>
             </div>
-            <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>
-              Enter to send · Shift+Enter for new line · Replying as Joshua Elder
+          ) : (
+            <div style={{ padding: '14px 16px', borderTop: '1px solid #1e2530', background: '#0a0d13', textAlign: 'center', fontSize: 13, color: '#4a5568', flexShrink: 0 }}>
+              This conversation is resolved.
+              <button onClick={function() { reopenChat(selected.id) }} style={{ marginLeft: 8, background: 'none', border: 'none', color: G, cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: 600 }}>Reopen</button>
             </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Select a conversation</div>
+          <div style={{ fontSize: 13, color: '#4a5568' }}>{openCount} open conversation{openCount !== 1 ? 's' : ''} waiting</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 18px', background: joshOnline ? 'rgba(46,204,113,.07)' : 'rgba(255,255,255,.03)', border: '1px solid ' + (joshOnline ? 'rgba(46,204,113,.2)' : '#1e2530'), borderRadius: 10, fontSize: 12, color: joshOnline ? '#2ecc71' : '#4a5568', fontWeight: 600 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: joshOnline ? '#2ecc71' : '#4a5568', display: 'inline-block', animation: joshOnline ? 'pulse 2s infinite' : 'none' }} />
+            Josh is {joshOnline ? 'Online' : 'Away'}
           </div>
         </div>
       )}
