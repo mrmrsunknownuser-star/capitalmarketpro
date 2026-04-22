@@ -6,6 +6,7 @@ import './globals.css'
 import { ToastProvider } from '@/components/Toast'
 import { ThemeProvider } from '@/components/ThemeToggle'
 import ChatBubble from '@/components/ChatBubble'
+<ChatBubble />
 
 
 const geistMono = Geist_Mono({
