@@ -67,6 +67,13 @@ var TESTIMONIALS = [
   { name: 'Claudia V.', role: 'Satisfied Investor', initials: 'CV', text: 'I am very pleased with everything. The platform is intuitive, the returns are consistent and the customer service team is responsive and helpful.' },
   { name: 'Mike E.', role: 'Regular Investor', initials: 'ME', text: 'In difficult times it is good to know there are people who support you and help you grow your money. Thank you CapitalMarket Pro for this opportunity.' },
 ]
+var VIDEOS = [
+  { id: 'PHe0bXAIuk0', title: 'How The Economic Machine Works', author: 'Ray Dalio' },
+  { id: 'p7HKvqRI_Bo', title: 'How Does The Stock Market Work?', author: 'TED-Ed' },
+  { id: 'Xn7KWR9EOGQ', title: 'Forex Trading for Beginners', author: 'Trading 212' },
+  { id: 'ZCFkWDdmXG8', title: 'How The Stock Exchange Works', author: 'Kurzgesagt' },
+  { id: 'ssWKE9Hgpd0', title: 'Warren Buffett Financial Advice', author: 'Investor Archive' },
+]
 
 function CMLogo(props) {
   var s = props.size || 40
@@ -527,7 +534,6 @@ export default function LandingPage() {
 
       {/* ── EDUCATION CENTER ── */}
       <section id="education" className="sec" style={{ padding: '80px 24px', background: 'rgba(13,17,23,0.9)' }}>
-        <div style={{ maxWidth: 1320, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <div style={{ fontSize: 12, color: G, fontWeight: 700, letterSpacing: '.15em', textTransform: 'uppercase', marginBottom: 12 }}>Education Center</div>
             <h2 className="h2" style={{ fontSize: 38, fontWeight: 800, color: '#e8edf5', marginBottom: 12 }}>Learn From Market Experts</h2>
@@ -537,16 +543,28 @@ export default function LandingPage() {
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#e8edf5', marginBottom: 14 }}>Featured: Introduction to Trading</div>
               <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid #1e2530', boxShadow: '0 20px 60px rgba(0,0,0,.5)' }}>
-                <iframe width="100%" height="260" src="https://www.youtube.com/embed/ZCFkWDdmXG8?rel=0&modestbranding=1" title="How The Stock Exchange Works" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ display: 'block' }} />
-              </div>
-              <div style={{ marginTop: 14, fontSize: 13, color: '#4a5568', lineHeight: 1.7 }}>New to investing? This video explains how the stock exchange works, how prices move, and how you can profit from global financial markets. Perfect for beginners getting started on CapitalMarket Pro.</div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-                {[['crypto', 'Crypto'], ['forex', 'Forex'], ['stocks', 'Stocks'], ['basics', 'Basics']].map(function(t) {
-                  return <button key={t[0]} className={'tab-btn' + (eduTab === t[0] ? ' on' : '')} onClick={function() { setEduTab(t[0]) }} style={{ padding: '7px 14px', fontSize: 12 }}>{t[1]}</button>
-                })}
-              </div>
+                <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid #1e2530', marginBottom: 14 }}>
+  <iframe width="100%" height="260" src="https://www.youtube.com/embed/PHe0bXAIuk0?rel=0&modestbranding=1" title="How The Economic Machine Works" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ display: 'block' }} />
+</div>
+<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+  {VIDEOS.map(function(vid) {
+    return (
+      <a key={vid.id} href={'https://www.youtube.com/watch?v=' + vid.id} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#0d1117', border: '1px solid #1e2530', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }} onMouseEnter={function(e) { e.currentTarget.style.borderColor = 'rgba(201,168,76,.4)' }} onMouseLeave={function(e) { e.currentTarget.style.borderColor = '#1e2530' }}>
+        <div style={{ width: 80, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+          <img src={'https://img.youtube.com/vi/' + vid.id + '/mqdefault.jpg'} alt={vid.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(201,168,76,.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>▶</div>
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#e8edf5', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{vid.title}</div>
+          <div style={{ fontSize: 11, color: '#4a5568', marginTop: 3 }}>{vid.author}</div>
+        </div>
+        <span style={{ fontSize: 10, color: '#C9A84C', flexShrink: 0, fontWeight: 600 }}>Watch</span>
+      </a>
+    )
+  })}
+</div>
               <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, padding: 22, marginBottom: 16 }}>
                 {eduTab === 'crypto' && (
                   <div>
