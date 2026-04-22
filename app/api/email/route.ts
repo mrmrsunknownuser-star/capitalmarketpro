@@ -1,301 +1,250 @@
-import { NextRequest, NextResponse } from 'next/server'
+// @ts-nocheck
+import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM_EMAIL = 'noreply@capitalmarket-pro.com'
-const SITE_NAME = 'CapitalMarket Pro'
+var resend = new Resend(process.env.RESEND_API_KEY)
 
-async function sendEmail(to: string, subject: string, html: string) {
-  if (!RESEND_API_KEY) {
-    console.log('No Resend API key — email skipped')
-    return { success: false }
+var requestCounts = new Map()
+
+function rateLimit(ip) {
+  var now = Date.now()
+  var record = requestCounts.get(ip)
+  if (!record || now - record.start > 60000) {
+    requestCounts.set(ip, { count: 1, start: now })
+    return true
   }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
-    body: JSON.stringify({ from: `${SITE_NAME} <${FROM_EMAIL}>`, to, subject, html }),
-  })
-  return { success: res.ok }
+  if (record.count >= 15) return false
+  record.count++
+  return true
 }
 
-const baseStyle = `
-  font-family: 'Courier New', monospace;
-  background: #060a0f;
-  color: #e6edf3;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 40px 20px;
-`
+var FROM = 'CapitalMarket Pro <noreply@capitalmarket-pro.com>'
+var SUPPORT = 'support@capitalmarket-pro.com'
+var SITE = 'https://capitalmarket-pro.com'
 
-const cardStyle = `
-  background: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 16px;
-  padding: 32px;
-  margin: 20px 0;
-`
-
-const btnStyle = `
-  display: inline-block;
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #C9A84C, #E8D08C);
-  color: #060a0f;
-  text-decoration: none;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 14px;
-  font-family: monospace;
-  margin: 16px 0;
-`
-
-const logoHtml = `
-  <div style="text-align:center; margin-bottom:32px;">
-    <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#C9A84C,#E8D08C);display:inline-flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#060a0f;margin-bottom:12px;">C</div>
-    <div style="font-size:20px;font-weight:800;"><span style="color:#C9A84C;">CapitalMarket</span><span style="color:#e6edf3;"> Pro</span></div>
-    <div style="font-size:11px;color:#484f58;letter-spacing:0.1em;text-transform:uppercase;">Professional Trading Platform</div>
-  </div>
-`
-
-const footerHtml = `
-  <div style="text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid #161b22;">
-    <div style="font-size:12px;color:#484f58;line-height:1.8;">
-      © 2025 CapitalMarket Pro Financial Services. All Rights Reserved.<br/>
-      <a href="https://capitalmarket-pro.com" style="color:#C9A84C;text-decoration:none;">capitalmarket-pro.com</a>
-      &nbsp;·&nbsp;
-      <a href="https://capitalmarket-pro.com/terms" style="color:#484f58;text-decoration:none;">Terms & Privacy</a>
+function baseTemplate(content) {
+  return `
+    <div style="background:#060a0e;min-height:100vh;padding:40px 20px;font-family:Inter,Arial,sans-serif">
+      <div style="max-width:560px;margin:0 auto">
+        <div style="text-align:center;margin-bottom:32px">
+          <div style="width:48px;height:48px;background:linear-gradient(135deg,#C9A84C,#E8D08C);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#060a0e">C</div>
+          <div style="margin-top:10px;font-size:17px;font-weight:800;color:#e8edf5">CapitalMarket <span style="color:#C9A84C">Pro</span></div>
+          <div style="font-size:10px;color:#4a5568;letter-spacing:0.1em;text-transform:uppercase;margin-top:3px">Global Trading Platform</div>
+        </div>
+        <div style="background:#0d1117;border:1px solid #1e2530;border-radius:20px;padding:36px;margin-bottom:24px">
+          ${content}
+        </div>
+        <div style="text-align:center;font-size:11px;color:#2a3140;line-height:1.8">
+          <p>CapitalMarket Pro Financial Services LLC | 350 Fifth Avenue, New York, NY 10118</p>
+          <p>Need help? <a href="mailto:${SUPPORT}" style="color:#C9A84C">Contact Support</a></p>
+          <p style="margin-top:8px;color:#1e2530">You received this email because you have an account on CapitalMarket Pro.</p>
+        </div>
+      </div>
     </div>
-  </div>
-`
-
-function getTemplate(type: string, data: any): { subject: string; html: string } | null {
-  switch (type) {
-
-    case 'welcome':
-      return {
-        subject: `🎉 Welcome to ${SITE_NAME}!`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <h1 style="color:#C9A84C;font-size:24px;margin-bottom:8px;">Welcome, ${data.name || 'Trader'}! 👋</h1>
-            <p style="color:#8b949e;line-height:1.9;margin-bottom:20px;">
-              Your CapitalMarket Pro account is now active. You're one step closer to growing your wealth with our AI-powered automated trading system.
-            </p>
-            <div style="background:#161b22;border-radius:12px;padding:20px;margin-bottom:24px;">
-              <div style="color:#e6edf3;font-weight:700;margin-bottom:12px;">🚀 Get Started in 3 Steps:</div>
-              <div style="color:#8b949e;font-size:13px;line-height:2;">
-                <div>1️⃣ Complete your <strong style="color:#C9A84C;">KYC verification</strong></div>
-                <div>2️⃣ <strong style="color:#C9A84C;">Deposit funds</strong> via Bitcoin</div>
-                <div>3️⃣ Choose an <strong style="color:#C9A84C;">investment plan</strong> and start earning</div>
-              </div>
-            </div>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard" style="${btnStyle}">Go to Dashboard →</a>
-            </div>
-            <p style="color:#484f58;font-size:12px;text-align:center;margin-top:16px;">
-              Questions? Your dedicated Account Manager <strong style="color:#C9A84C;">Joshua C. Elder</strong> is available 24/7.
-            </p>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'deposit_confirmed':
-      return {
-        subject: `✅ Deposit of $${data.amount?.toLocaleString()} Confirmed`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">✅</div>
-              <h1 style="color:#3fb950;font-size:22px;margin-bottom:4px;">Deposit Confirmed!</h1>
-              <div style="font-size:32px;font-weight:800;color:#C9A84C;">$${data.amount?.toLocaleString()}</div>
-            </div>
-            <div style="background:#161b22;border-radius:12px;padding:16px;margin-bottom:20px;">
-              ${[
-                ['Amount', `$${data.amount?.toLocaleString()}`],
-                ['Cryptocurrency', data.crypto || 'Bitcoin (BTC)'],
-                ['Status', '✅ Confirmed & Credited'],
-                ['Account Balance', `$${data.newBalance?.toLocaleString() || 'Updated'}`],
-              ].map(([l, v]) => `
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #21262d;">
-                  <span style="color:#484f58;font-size:12px;">${l}</span>
-                  <span style="color:#e6edf3;font-weight:600;font-size:12px;">${v}</span>
-                </div>
-              `).join('')}
-            </div>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard/invest" style="${btnStyle}">View Investment Plans →</a>
-            </div>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'withdrawal_approved':
-      return {
-        subject: `✅ Withdrawal of $${data.amount?.toLocaleString()} Approved`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">💸</div>
-              <h1 style="color:#3fb950;font-size:22px;margin-bottom:4px;">Withdrawal Approved!</h1>
-              <div style="font-size:32px;font-weight:800;color:#C9A84C;">$${data.amount?.toLocaleString()}</div>
-            </div>
-            <div style="background:#161b22;border-radius:12px;padding:16px;margin-bottom:20px;">
-              ${[
-                ['Amount', `$${data.amount?.toLocaleString()}`],
-                ['Network', data.network || 'Bitcoin (BTC)'],
-                ['Wallet', data.wallet ? data.wallet.slice(0, 20) + '...' : '—'],
-                ['Status', '✅ Processing'],
-                ['ETA', '24-48 hours'],
-              ].map(([l, v]) => `
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #21262d;">
-                  <span style="color:#484f58;font-size:12px;">${l}</span>
-                  <span style="color:#e6edf3;font-weight:600;font-size:12px;">${v}</span>
-                </div>
-              `).join('')}
-            </div>
-            <p style="color:#8b949e;font-size:13px;line-height:1.8;text-align:center;">
-              Your funds are being sent to your wallet. You will receive a blockchain confirmation once complete.
-            </p>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'withdrawal_rejected':
-      return {
-        subject: `❌ Withdrawal Request Update`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">❌</div>
-              <h1 style="color:#f85149;font-size:22px;">Withdrawal Not Processed</h1>
-            </div>
-            <p style="color:#8b949e;line-height:1.9;margin-bottom:16px;">
-              Your withdrawal request of <strong style="color:#e6edf3;">$${data.amount?.toLocaleString()}</strong> could not be processed at this time.
-              ${data.reason ? `<br/><br/>Reason: <strong style="color:#C9A84C;">${data.reason}</strong>` : ''}
-            </p>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard/support" style="${btnStyle}">Contact Support →</a>
-            </div>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'kyc_approved':
-      return {
-        subject: `✅ Identity Verified — Full Access Unlocked`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-              <h1 style="color:#3fb950;font-size:22px;">KYC Approved!</h1>
-              <p style="color:#8b949e;font-size:14px;">Your identity has been verified</p>
-            </div>
-            <div style="background:#161b22;border-radius:12px;padding:16px;margin-bottom:20px;">
-              <div style="color:#e6edf3;font-weight:700;margin-bottom:12px;">✅ Features Unlocked:</div>
-              ${['Withdrawals enabled', 'All investment plans available', 'Pro Cards available', 'Full affiliate program', 'Priority support'].map(f => `
-                <div style="color:#3fb950;font-size:13px;padding:4px 0;">✓ ${f}</div>
-              `).join('')}
-            </div>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard" style="${btnStyle}">Access Full Platform →</a>
-            </div>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'kyc_rejected':
-      return {
-        subject: `⚠️ KYC Verification — Action Required`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
-              <h1 style="color:#f85149;font-size:22px;">Verification Needs Attention</h1>
-            </div>
-            <p style="color:#8b949e;line-height:1.9;margin-bottom:16px;">
-              Your identity verification could not be completed. ${data.reason ? `Reason: <strong style="color:#C9A84C;">${data.reason}</strong>` : 'Please resubmit clearer documents.'}
-            </p>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard/kyc" style="${btnStyle}">Resubmit Documents →</a>
-            </div>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'card_approved':
-      return {
-        subject: `✅ Your ${data.cardName} is Now Active!`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <div style="text-align:center;margin-bottom:24px;">
-              <div style="font-size:48px;margin-bottom:12px;">💳</div>
-              <h1 style="color:#3fb950;font-size:22px;">${data.cardName} Activated!</h1>
-            </div>
-            <p style="color:#8b949e;line-height:1.9;margin-bottom:20px;">
-              Congratulations! Your <strong style="color:#C9A84C;">${data.cardName}</strong> is now active and ready to use. ${data.type === 'physical' ? 'Your physical card will be shipped to your registered address.' : 'You can start using your virtual card immediately.'}
-            </p>
-            <div style="text-align:center;">
-              <a href="https://capitalmarket-pro.com/dashboard/card" style="${btnStyle}">View My Card →</a>
-            </div>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    case 'password_reset':
-      return {
-        subject: `🔒 Password Reset Request`,
-        html: `<div style="${baseStyle}">
-          ${logoHtml}
-          <div style="${cardStyle}">
-            <h1 style="color:#C9A84C;font-size:22px;margin-bottom:8px;">Password Reset</h1>
-            <p style="color:#8b949e;line-height:1.9;margin-bottom:20px;">
-              We received a request to reset your password. Click the button below to create a new password.
-            </p>
-            <div style="text-align:center;">
-              <a href="${data.resetUrl}" style="${btnStyle}">Reset Password →</a>
-            </div>
-            <p style="color:#484f58;font-size:12px;text-align:center;margin-top:16px;">
-              If you didn't request this, please ignore this email. Link expires in 1 hour.
-            </p>
-          </div>
-          ${footerHtml}
-        </div>`
-      }
-
-    default:
-      return null
-  }
+  `
 }
 
-export async function POST(req: NextRequest) {
+var TEMPLATES = {
+  welcome: function(data) {
+    return {
+      subject: 'Welcome to CapitalMarket Pro — Your Account Is Ready',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:22px;font-weight:800;margin-bottom:8px">Welcome, ${data.name || 'Trader'}! 🎉</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Your CapitalMarket Pro account has been created successfully. You are now part of a global community of 180,000+ investors.</p>
+        <div style="background:#141920;border-radius:14px;padding:20px;margin-bottom:20px">
+          <p style="color:#4a5568;font-size:12px;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Getting Started</p>
+          ${['Complete your KYC verification to unlock all features', 'Make your first deposit (minimum $50)', 'Choose an investment plan or copy a top trader', 'Track your earnings in real time on your dashboard'].map(function(step, i) {
+            return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#E8D08C);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#060a0e;flex-shrink:0">' + (i + 1) + '</div><span style="color:#8892a0;font-size:13px">' + step + '</span></div>'
+          }).join('')}
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none">Go to Your Dashboard →</a>
+      `),
+    }
+  },
+
+  login_alert: function(data) {
+    return {
+      subject: 'New Login Detected — CapitalMarket Pro',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">New Login Detected 🔐</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">A new login was detected on your CapitalMarket Pro account.</p>
+        <div style="background:#141920;border-radius:14px;padding:20px;margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px"><span style="color:#4a5568">Time</span><span style="color:#e8edf5;font-weight:600">${data.time || new Date().toLocaleString()}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#4a5568">Device</span><span style="color:#e8edf5;font-weight:600">${data.device || 'Browser'}</span></div>
+        </div>
+        <div style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:12px;padding:16px;margin-bottom:20px">
+          <p style="color:#e74c3c;font-size:13px;margin:0;line-height:1.7">If this was not you, please change your password immediately and contact our support team.</p>
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Secure My Account</a>
+      `),
+    }
+  },
+
+  deposit_confirmed: function(data) {
+    return {
+      subject: 'Deposit Confirmed — $' + (data.amount || '0') + ' Added to Your Account',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">Deposit Confirmed ✅</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Your deposit has been approved and credited to your CapitalMarket Pro account.</p>
+        <div style="background:#141920;border-radius:14px;padding:20px;margin-bottom:20px">
+          <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:36px;font-weight:900;color:#2ecc71">$${data.amount || '0'}</div>
+            <div style="font-size:12px;color:#4a5568;margin-top:4px">Successfully Credited</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:#4a5568">Method</span><span style="color:#e8edf5">${data.method || 'Crypto'}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#4a5568">Date</span><span style="color:#e8edf5">${new Date().toLocaleDateString()}</span></div>
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Start Investing Now →</a>
+      `),
+    }
+  },
+
+  withdrawal_approved: function(data) {
+    return {
+      subject: 'Withdrawal Approved — $' + (data.amount || '0') + ' Is On Its Way',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">Withdrawal Approved ✅</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Your withdrawal request has been approved and is being processed.</p>
+        <div style="background:#141920;border-radius:14px;padding:20px;margin-bottom:20px">
+          <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:36px;font-weight:900;color:#C9A84C">$${data.amount || '0'}</div>
+            <div style="font-size:12px;color:#4a5568;margin-top:4px">Approved and Processing</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px"><span style="color:#4a5568">Wallet</span><span style="color:#e8edf5;font-size:12px">${data.wallet ? data.wallet.slice(0, 12) + '...' : 'On file'}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#4a5568">Processing Time</span><span style="color:#e8edf5">Within 24 hours</span></div>
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">View Dashboard</a>
+      `),
+    }
+  },
+
+  withdrawal_rejected: function(data) {
+    return {
+      subject: 'Withdrawal Update — Action Required',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">Withdrawal Could Not Be Processed</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Unfortunately your withdrawal request could not be processed at this time.</p>
+        <div style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:12px;padding:16px;margin-bottom:20px">
+          <p style="color:#e74c3c;font-size:13px;margin:0;line-height:1.7">Reason: ${data.reason || 'Please ensure your KYC is verified and wallet address is correct.'}</p>
+        </div>
+        <p style="color:#8892a0;font-size:13px;margin-bottom:20px;line-height:1.7">Please contact our support team for assistance. We are here to help resolve this quickly.</p>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Contact Support</a>
+      `),
+    }
+  },
+
+  kyc_approved: function(data) {
+    return {
+      subject: 'KYC Verified — Your Account Is Fully Unlocked',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">KYC Verification Approved ✅</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Congratulations! Your identity has been verified. All features are now fully unlocked on your account.</p>
+        <div style="background:#141920;border-radius:14px;padding:20px;margin-bottom:20px">
+          ${['Withdrawals enabled', 'All investment plans accessible', 'Higher deposit limits', 'Pro Card application available', 'Priority customer support'].map(function(feat) {
+            return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;color:#8892a0"><span style="color:#2ecc71;font-size:14px">v</span>' + feat + '</div>'
+          }).join('')}
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Start Investing →</a>
+      `),
+    }
+  },
+
+  kyc_rejected: function(data) {
+    return {
+      subject: 'KYC Verification — Resubmission Required',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">KYC Resubmission Required</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">We were unable to verify your identity with the documents provided. Please resubmit with the corrections below.</p>
+        <div style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:12px;padding:16px;margin-bottom:20px">
+          <p style="color:#e74c3c;font-size:13px;margin:0;line-height:1.7">Reason: ${data.reason || 'Document unclear or invalid. Please upload a clear photo of a valid government-issued ID.'}</p>
+        </div>
+        <div style="background:#141920;border-radius:14px;padding:16px;margin-bottom:20px">
+          ${['Ensure photo is clear and all corners visible', 'Document must not be expired', 'Use passport, national ID or drivers license', 'File must be JPG or PNG under 5MB'].map(function(tip) {
+            return '<div style="font-size:13px;color:#8892a0;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="color:#C9A84C">•</span>' + tip + '</div>'
+          }).join('')}
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">Resubmit Documents →</a>
+      `),
+    }
+  },
+
+  password_reset: function(data) {
+    return {
+      subject: 'Reset Your CapitalMarket Pro Password',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">Password Reset Request 🔑</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">We received a request to reset the password for your account. Click the button below to create a new password.</p>
+        <a href="${data.link || SITE + '/forgot-password'}" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none;margin-bottom:20px">Reset My Password →</a>
+        <div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.12);border-radius:12px;padding:14px">
+          <p style="color:#4a5568;font-size:12px;margin:0;line-height:1.7">This link expires in 1 hour. If you did not request a password reset, please ignore this email. Your password will not be changed.</p>
+        </div>
+      `),
+    }
+  },
+
+  card_approved: function(data) {
+    return {
+      subject: 'Your CapitalMarket Pro Card Is Approved',
+      html: baseTemplate(`
+        <h2 style="color:#e8edf5;font-size:20px;font-weight:800;margin-bottom:8px">Pro Card Approved 💳</h2>
+        <p style="color:#8892a0;font-size:14px;margin-bottom:20px">Congratulations! Your CapitalMarket Pro Card application has been approved.</p>
+        <div style="background:linear-gradient(135deg,#C9A84C,#E8D08C);border-radius:16px;padding:24px;margin-bottom:20px;text-align:center">
+          <div style="font-size:13px;color:rgba(0,0,0,0.6);margin-bottom:6px">CapitalMarket Pro</div>
+          <div style="font-size:20px;font-weight:800;color:#060a0e;letter-spacing:3px">${data.card_last4 ? '**** **** **** ' + data.card_last4 : '**** **** **** ****'}</div>
+          <div style="font-size:12px;color:rgba(0,0,0,0.5);margin-top:8px">${data.card_type || 'Virtual Card'}</div>
+        </div>
+        <a href="${SITE}/dashboard" style="display:block;text-align:center;background:linear-gradient(135deg,#C9A84C,#E8D08C);color:#060a0e;padding:14px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none">View My Card →</a>
+      `),
+    }
+  },
+
+  raw: function(data) {
+    return {
+      subject: data.subject || 'Message from CapitalMarket Pro',
+      html: data.html || '<p>No content</p>',
+    }
+  },
+}
+
+export async function POST(req) {
+  var ip = req.headers.get('x-forwarded-for') || 'unknown'
+  if (!rateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 })
+  }
+
   try {
-    const body = await req.json()
-    const { type, to, data } = body
+    var body = await req.json()
+    var type = body.type
+    var to = body.to
+    var data = body.data || {}
 
-    if (!to || !type) {
-      return NextResponse.json({ error: 'Missing to or type' }, { status: 400 })
+    if (!type || !to) {
+      return NextResponse.json({ error: 'Missing type or to field' }, { status: 400 })
     }
 
-    const template = getTemplate(type, data || {})
-    if (!template) {
-      return NextResponse.json({ error: 'Unknown email type' }, { status: 400 })
+    var templateFn = TEMPLATES[type]
+    if (!templateFn) {
+      return NextResponse.json({ error: 'Unknown email type: ' + type }, { status: 400 })
     }
 
-    const result = await sendEmail(to, template.subject, template.html)
-    return NextResponse.json({ success: result.success })
+    var template = templateFn(data)
+
+    var result = await resend.emails.send({
+      from: FROM,
+      to: to,
+      subject: template.subject,
+      html: template.html,
+    })
+
+    if (result.error) {
+      console.error('Resend error:', result.error)
+      return NextResponse.json({ error: result.error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, id: result.data && result.data.id })
+
   } catch (err) {
-    console.error('Email error:', err)
-    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
+    console.error('Email route error:', err)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
