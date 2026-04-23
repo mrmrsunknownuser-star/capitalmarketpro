@@ -22,13 +22,19 @@ export default function WalletPage() {
 })
 
 supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
-  if (r.data) setUser(function(prev) {
-    return Object.assign({}, prev, {
-      balance: r.data.main_balance || r.data.crypto_balance || r.data.balance || 0,
-      invested_amount: r.data.invested_amount || r.data.investment_balance || 0,
-      total_profit: r.data.profit_balance || r.data.total_profit || 0,
+  if (r.data) {
+    setUser(function(prev) {
+      return Object.assign({}, prev, {
+        balance: r.data.available_balance || 0,
+        trading_balance: r.data.trading_balance || 0,
+        crypto_balance: r.data.crypto_balance || 0,
+        stocks_balance: r.data.stocks_balance || 0,
+        affiliate_balance: r.data.affiliate_balance || 0,
+        total_pnl: r.data.total_pnl || 0,
+        pnl_percentage: r.data.pnl_percentage || 0,
+      })
     })
-  })
+  }
       })
       supabase.from('deposits').select('*').eq('user_id', uid).eq('status', 'approved').then(function(r) {
         if (r.data) setDeposits(r.data)
@@ -71,9 +77,9 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
           {[
-            { label: 'Available', val: '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2 }), color: '#2ecc71' },
-            { label: 'Invested', val: '$' + invested.toLocaleString('en-US', { minimumFractionDigits: 2 }), color: G },
-            { label: 'Total Profit', val: '$' + profit.toLocaleString('en-US', { minimumFractionDigits: 2 }), color: '#3498db' },
+            { label: 'Available', val: '$' + parseFloat(user && user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }), color: '#2ecc71' },
+{ label: 'Trading', val: '$' + parseFloat(user && user.trading_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }), color: G },
+{ label: 'Total PnL', val: (user && user.total_pnl >= 0 ? '+' : '') + '$' + parseFloat(user && user.total_pnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }), color: user && user.total_pnl >= 0 ? '#2ecc71' : '#e74c3c' },
           ].map(function(item) {
             return (
               <div key={item.label} style={{ background: '#141920', borderRadius: 12, padding: '12px 10px', textAlign: 'center' }}>

@@ -35,9 +35,13 @@ export default function DashboardHome() {
 supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
   if (r.data) setUser(function(prev) {
     return Object.assign({}, prev, {
-      balance: r.data.main_balance || r.data.crypto_balance || r.data.balance || 0,
-      invested_amount: r.data.invested_amount || r.data.investment_balance || 0,
-      total_profit: r.data.profit_balance || r.data.total_profit || 0,
+      balance: r.data.available_balance || 0,
+      trading_balance: r.data.trading_balance || 0,
+      crypto_balance: r.data.crypto_balance || 0,
+      stocks_balance: r.data.stocks_balance || 0,
+      affiliate_balance: r.data.affiliate_balance || 0,
+      total_pnl: r.data.total_pnl || 0,
+      pnl_percentage: r.data.pnl_percentage || 0,
     })
   })
 
