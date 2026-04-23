@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 export default function DashboardHome() {
   var router = useRouter()
   var [user, setUser] = useState(null)
+  var [balances, setBalances] = useState(null)
   var [showBalance, setShowBalance] = useState(false)
   var [transactions, setTransactions] = useState([])
   var [notifications, setNotifications] = useState(0)
@@ -38,28 +39,22 @@ export default function DashboardHome() {
       if (!res.data.user) { router.push('/login'); return }
       var uid = res.data.user.id
 
+      // Fetch user profile
       supabase.from('users').select('*').eq('id', uid).single().then(function(r) {
         if (r.data) setUser(r.data)
       })
 
+      // Fetch balances separately - never mix with user state
       supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
-        if (r.data) setUser(function(prev) {
-          return Object.assign({}, prev, {
-            balance: r.data.available_balance || 0,
-            trading_balance: r.data.trading_balance || 0,
-            crypto_balance: r.data.crypto_balance || 0,
-            stocks_balance: r.data.stocks_balance || 0,
-            affiliate_balance: r.data.affiliate_balance || 0,
-            total_pnl: r.data.total_pnl || 0,
-            pnl_percentage: r.data.pnl_percentage || 0,
-          })
-        })
+        if (r.data) setBalances(r.data)
       }).catch(function() {})
 
+      // Fetch recent deposits as transactions
       supabase.from('deposits').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
         if (r.data) setTransactions(r.data)
       }).catch(function() {})
 
+      // Fetch unread notifications count
       supabase.from('notifications').select('id').eq('user_id', uid).eq('is_read', false).then(function(r) {
         if (r.data) setNotifications(r.data.length)
       }).catch(function() {})
@@ -67,11 +62,16 @@ export default function DashboardHome() {
       setLoading(false)
     })
 
+    // Banner auto rotate
     var t = setInterval(function() {
       setBannerIndex(function(i) { return (i + 1) % 4 })
     }, 4000)
     return function() { clearInterval(t) }
   }, [])
+
+  var availableBalance = parseFloat(balances && balances.available_balance || 0)
+  var tradingBalance = parseFloat(balances && balances.trading_balance || 0)
+  var totalPnl = parseFloat(balances && balances.total_pnl || 0)
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#060a0e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -129,16 +129,35 @@ export default function DashboardHome() {
             <span style={{ fontSize: 9, color: '#4a5568' }}>▾</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <div style={{ fontSize: 32, fontWeight: 900, color: '#e8edf5', letterSpacing: '-1px' }}>
             {showBalance
-              ? '$' + parseFloat(user && user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
+              ? '$' + availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })
               : '$••••••••'}
           </div>
           <button onClick={function() { setShowBalance(!showBalance) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#4a5568', padding: 4 }}>
             {showBalance ? '🙈' : '👁'}
           </button>
         </div>
+
+        {/* Mini balance breakdown */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
+          {[
+            { label: 'Trading', val: showBalance ? '$' + tradingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '••••', color: G },
+            { label: 'PnL', val: showBalance ? (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '••••', color: totalPnl >= 0 ? '#2ecc71' : '#e74c3c' },
+            { label: 'Affiliate', val: showBalance ? '$' + parseFloat(balances && balances.affiliate_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '••••', color: '#3498db' },
+          ].map(function(item) {
+            return (
+              <div key={item.label} style={{ background: '#141920', borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: item.color }}>{item.val}</div>
+                <div style={{ fontSize: 9, color: '#4a5568', marginTop: 3 }}>{item.label}</div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Action buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
           {[
             { icon: '↓', label: 'Deposit', href: '/dashboard/deposit', color: '#2ecc71' },
@@ -210,7 +229,9 @@ export default function DashboardHome() {
             <div style={{ fontSize: 14, color: '#4a5568' }}>No transactions yet</div>
             <div style={{ fontSize: 12, color: '#2a3140', marginTop: 6 }}>Make your first deposit to get started</div>
             <Link href="/dashboard/deposit">
-              <button style={{ marginTop: 16, padding: '10px 24px', background: GG, border: 'none', borderRadius: 10, color: '#060a0e', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Deposit Now</button>
+              <button style={{ marginTop: 16, padding: '10px 24px', background: GG, border: 'none', borderRadius: 10, color: '#060a0e', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                Deposit Now
+              </button>
             </Link>
           </div>
         ) : (
@@ -224,8 +245,10 @@ export default function DashboardHome() {
                       {isCredit ? '↓' : '↑'}
                     </div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#e8edf5', textTransform: 'capitalize' }}>{tx.type || 'Transaction'}</div>
-                      <div style={{ fontSize: 11, color: '#4a5568', marginTop: 2 }}>{new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#e8edf5', textTransform: 'capitalize' }}>{tx.type || 'Deposit'}</div>
+                      <div style={{ fontSize: 11, color: '#4a5568', marginTop: 2 }}>
+                        {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
