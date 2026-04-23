@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -9,12 +9,14 @@ import { createClient } from '@/lib/supabase/client'
 export default function DashboardHome() {
   var router = useRouter()
   var [user, setUser] = useState(null)
-  var [balance, setBalance] = useState(0)
   var [showBalance, setShowBalance] = useState(false)
   var [transactions, setTransactions] = useState([])
   var [notifications, setNotifications] = useState(0)
   var [bannerIndex, setBannerIndex] = useState(0)
   var [loading, setLoading] = useState(true)
+
+  var G = '#C9A84C'
+  var GG = 'linear-gradient(135deg, #C9A84C, #E8D08C)'
 
   var BANNERS = [
     { bg: 'linear-gradient(135deg,#1a2a1a,#0d2010)', accent: '#2ecc71', icon: '📈', title: 'Earn Up to 8% Monthly', sub: 'Our Crypto Elite plan returns up to 8% every month. Start from just $50.' },
@@ -23,35 +25,45 @@ export default function DashboardHome() {
     { bg: 'linear-gradient(135deg,#1a102a,#100820)', accent: '#9b59b6', icon: '🏠', title: 'Real Estate Returns', sub: 'Invest in real estate from $200 and earn stable monthly returns.' },
   ]
 
+  var INVEST_TYPES = [
+    { id: 'crypto', icon: '₿', label: 'Crypto', color: '#F7931A', bg: 'rgba(247,147,26,.12)' },
+    { id: 'stocks', icon: '📈', label: 'Stocks', color: '#2ecc71', bg: 'rgba(46,204,113,.12)' },
+    { id: 'forex', icon: '💱', label: 'Forex', color: '#3498db', bg: 'rgba(52,152,219,.12)' },
+    { id: 'realestate', icon: '🏠', label: 'Real Estate', color: '#9b59b6', bg: 'rgba(155,89,182,.12)' },
+  ]
+
   useEffect(function() {
     var supabase = createClient()
     supabase.auth.getUser().then(function(res) {
       if (!res.data.user) { router.push('/login'); return }
       var uid = res.data.user.id
+
       supabase.from('users').select('*').eq('id', uid).single().then(function(r) {
-  if (r.data) setUser(r.data)
-})
-
-supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
-  if (r.data) setUser(function(prev) {
-    return Object.assign({}, prev, {
-      balance: r.data.available_balance || 0,
-      trading_balance: r.data.trading_balance || 0,
-      crypto_balance: r.data.crypto_balance || 0,
-      stocks_balance: r.data.stocks_balance || 0,
-      affiliate_balance: r.data.affiliate_balance || 0,
-      total_pnl: r.data.total_pnl || 0,
-      pnl_percentage: r.data.pnl_percentage || 0,
-    })
-  })
-
+        if (r.data) setUser(r.data)
       })
-      supabase.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
+
+      supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
+        if (r.data) setUser(function(prev) {
+          return Object.assign({}, prev, {
+            balance: r.data.available_balance || 0,
+            trading_balance: r.data.trading_balance || 0,
+            crypto_balance: r.data.crypto_balance || 0,
+            stocks_balance: r.data.stocks_balance || 0,
+            affiliate_balance: r.data.affiliate_balance || 0,
+            total_pnl: r.data.total_pnl || 0,
+            pnl_percentage: r.data.pnl_percentage || 0,
+          })
+        })
+      }).catch(function() {})
+
+      supabase.from('deposits').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
         if (r.data) setTransactions(r.data)
       }).catch(function() {})
+
       supabase.from('notifications').select('id').eq('user_id', uid).eq('is_read', false).then(function(r) {
         if (r.data) setNotifications(r.data.length)
       }).catch(function() {})
+
       setLoading(false)
     })
 
@@ -61,105 +73,51 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
     return function() { clearInterval(t) }
   }, [])
 
-  var INVEST_TYPES = [
-    { id: 'crypto', icon: '₿', label: 'Crypto', color: '#F7931A', bg: 'rgba(247,147,26,.12)' },
-    { id: 'stocks', icon: '📈', label: 'Stocks', color: '#2ecc71', bg: 'rgba(46,204,113,.12)' },
-    { id: 'forex', icon: '💱', label: 'Forex', color: '#3498db', bg: 'rgba(52,152,219,.12)' },
-    { id: 'realestate', icon: '🏠', label: 'Real Estate', color: '#9b59b6', bg: 'rgba(155,89,182,.12)' },
-  ]
-
-  var G = '#C9A84C'
-  var GG = 'linear-gradient(135deg, #C9A84C, #E8D08C)'
-
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#060a0e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 32, height: 32, border: '3px solid #1e2530', borderTopColor: '#C9A84C', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+      <div style={{ width: 32, height: 32, border: '3px solid #1e2530', borderTopColor: G, borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
     </div>
   )
 
   return (
     <div style={{ background: '#060a0e', minHeight: '100vh', paddingBottom: 20 }}>
+      <style>{'@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}'}</style>
 
       {/* ── HEADER ── */}
-      <div style={{ padding: '0 20px 20px', paddingTop: 0 }}>
-  <div style={{ background: 'linear-gradient(135deg,#0d1117,#141920)', borderRadius: '0 0 28px 28px', padding: '56px 20px 24px', marginLeft: -20, marginRight: -20, marginBottom: 20, borderBottom: '1px solid #1e2530' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/dashboard/profile">
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#060a0e', cursor: 'pointer', flexShrink: 0 }}>
-            {user ? (user.full_name || user.username || 'U')[0].toUpperCase() : 'U'}
+      <div style={{ background: 'linear-gradient(135deg,#0d1117,#141920)', borderRadius: '0 0 28px 28px', padding: '56px 20px 24px', marginBottom: 20, borderBottom: '1px solid #1e2530' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Link href="/dashboard/profile">
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: GG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#060a0e', cursor: 'pointer', flexShrink: 0 }}>
+                {user ? (user.full_name || user.username || 'U')[0].toUpperCase() : 'U'}
+              </div>
+            </Link>
+            <div>
+              <div style={{ fontSize: 16, color: '#8892a0' }}>
+                Hey <span style={{ color: '#e8edf5', fontWeight: 800 }}>{user ? (user.full_name || user.username || 'Trader').split(' ')[0] : 'Trader'}</span> 👋
+              </div>
+              <Link href="/dashboard/kyc" style={{ textDecoration: 'none' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                  <span style={{ fontSize: 11, color: '#8892a0' }}>KYC</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: user && user.kyc_status === 'approved' ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)', color: user && user.kyc_status === 'approved' ? '#2ecc71' : '#e74c3c' }}>
+                    {user && user.kyc_status === 'approved' ? 'Verified' : 'Not Verified'}
+                  </span>
+                </div>
+              </Link>
+            </div>
           </div>
-        </Link>
-        <div>
-          <div style={{ fontSize: 16, color: '#8892a0' }}>
-            Hey <span style={{ color: '#e8edf5', fontWeight: 800 }}>{user ? (user.full_name || user.username || 'Trader').split(' ')[0] : 'Trader'}</span> 👋
-          </div>
-          <Link href="/dashboard/kyc" style={{ textDecoration: 'none' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
-              <span style={{ fontSize: 11, color: '#8892a0' }}>KYC</span>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: user && user.kyc_status === 'approved' ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)', color: user && user.kyc_status === 'approved' ? '#2ecc71' : '#e74c3c' }}>
-                {user && user.kyc_status === 'approved' ? 'Verified' : 'Not Verified'}
-              </span>
+          <Link href="/dashboard/more">
+            <div style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.05)', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <span style={{ fontSize: 22 }}>🔔</span>
+              {notifications > 0 && (
+                <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', border: '2px solid #060a0e' }}>
+                  {notifications > 9 ? '9+' : notifications}
+                </div>
+              )}
             </div>
           </Link>
         </div>
-      </div>
-      <Link href="/dashboard/more">
-        <div style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,.05)', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <span style={{ fontSize: 22 }}>🔔</span>
-          {notifications > 0 && (
-            <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', border: '2px solid #060a0e' }}>
-              {notifications > 9 ? '9+' : notifications}
-            </div>
-          )}
-        </div>
-      </Link>
-    </div>
-  </div>
-
-  {/* User greeting row */}
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <Link href="/dashboard/profile">
-        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0e', cursor: 'pointer', flexShrink: 0 }}>
-          {user ? (user.full_name || user.username || 'U')[0].toUpperCase() : 'U'}
-        </div>
-      </Link>
-      <div>
-        <div style={{ fontSize: 14, color: '#8892a0' }}>
-          Hey <span style={{ color: '#e8edf5', fontWeight: 700 }}>{user ? (user.full_name || user.username || 'Trader').split(' ')[0] : 'Trader'}</span> 👋
-        </div>
-        <Link href="/dashboard/kyc" style={{ textDecoration: 'none' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-            <span style={{ fontSize: 11, color: '#8892a0' }}>KYC</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: user && user.kyc_status === 'approved' ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)', color: user && user.kyc_status === 'approved' ? '#2ecc71' : '#e74c3c' }}>
-              {user && user.kyc_status === 'approved' ? 'Verified' : 'Not Verified'}
-            </span>
-          </div>
-        </Link>
-      </div>
-    </div>
-    <Link href="/dashboard/more?tab=notifications">
-      <div style={{ position: 'relative', width: 42, height: 42, borderRadius: '50%', background: '#0d1117', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-        <span style={{ fontSize: 20 }}>🔔</span>
-        {notifications > 0 && (
-          <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', border: '2px solid #060a0e' }}>
-            {notifications > 9 ? '9+' : notifications}
-          </div>
-        )}
-      </div>
-    </Link>
-  </div>
-        <Link href="/dashboard/more?tab=notifications">
-          <div style={{ position: 'relative', width: 42, height: 42, borderRadius: '50%', background: '#0d1117', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <span style={{ fontSize: 20 }}>🔔</span>
-            {notifications > 0 && (
-              <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', border: '2px solid #060a0e' }}>
-                {notifications > 9 ? '9+' : notifications}
-              </div>
-            )}
-          </div>
-        </Link>
       </div>
 
       {/* ── BALANCE CARD ── */}
@@ -173,7 +131,9 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div style={{ fontSize: 32, fontWeight: 900, color: '#e8edf5', letterSpacing: '-1px' }}>
-            {showBalance ? '$' + (user && user.balance ? parseFloat(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00') : '$••••••••'}
+            {showBalance
+              ? '$' + parseFloat(user && user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
+              : '$••••••••'}
           </div>
           <button onClick={function() { setShowBalance(!showBalance) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#4a5568', padding: 4 }}>
             {showBalance ? '🙈' : '👁'}
@@ -210,7 +170,7 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
           {INVEST_TYPES.map(function(type) {
             return (
               <Link key={type.id} href={'/dashboard/invest/' + type.id} style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 8px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, transition: 'all .2s', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 8px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, cursor: 'pointer' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: type.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                     {type.icon}
                   </div>
@@ -223,12 +183,12 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
       </div>
 
       {/* ── BANNER CAROUSEL ── */}
-      <div style={{ padding: '0 16px 20px', overflow: 'hidden' }}>
+      <div style={{ padding: '0 16px 20px' }}>
         <div style={{ background: BANNERS[bannerIndex].bg, borderRadius: 18, padding: '20px 22px', border: '1px solid rgba(255,255,255,.06)', transition: 'all .5s ease', minHeight: 110 }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>{BANNERS[bannerIndex].icon}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: '#e8edf5', marginBottom: 5 }}>{BANNERS[bannerIndex].title}</div>
           <div style={{ fontSize: 12, color: '#8892a0', lineHeight: 1.6, marginBottom: 12 }}>{BANNERS[bannerIndex].sub}</div>
-          <Link href="/register" style={{ fontSize: 12, color: BANNERS[bannerIndex].accent, fontWeight: 700, textDecoration: 'none' }}>Learn More →</Link>
+          <Link href="/dashboard/invest/crypto" style={{ fontSize: 12, color: BANNERS[bannerIndex].accent, fontWeight: 700, textDecoration: 'none' }}>Learn More →</Link>
         </div>
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
           {BANNERS.map(function(_, i) {
@@ -272,7 +232,7 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
                     <div style={{ fontSize: 14, fontWeight: 800, color: isCredit ? '#2ecc71' : '#e74c3c' }}>
                       {isCredit ? '+' : '-'}${parseFloat(tx.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 600, marginTop: 2, color: tx.status === 'approved' ? '#2ecc71' : tx.status === 'pending' ? '#C9A84C' : '#e74c3c' }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, marginTop: 2, color: tx.status === 'approved' ? '#2ecc71' : tx.status === 'pending' ? G : '#e74c3c' }}>
                       {tx.status || 'pending'}
                     </div>
                   </div>
