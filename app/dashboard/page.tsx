@@ -77,27 +77,62 @@ supabase.from('balances').select('*').eq('user_id', uid).single().then(function(
     <div style={{ background: '#060a0e', minHeight: '100vh', paddingBottom: 20 }}>
 
       {/* ── HEADER ── */}
-      <div style={{ padding: '52px 20px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/dashboard/profile">
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: GG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0e', cursor: 'pointer', flexShrink: 0 }}>
-              {user ? (user.full_name || user.username || 'U')[0].toUpperCase() : 'U'}
-            </div>
-          </Link>
-          <div>
-            <div style={{ fontSize: 14, color: '#8892a0' }}>
-              Hey <span style={{ color: '#e8edf5', fontWeight: 700 }}>{user ? (user.full_name || user.username || 'Trader').split(' ')[0] : 'Trader'}</span> 👋
-            </div>
-            <Link href="/dashboard/kyc" style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                <span style={{ fontSize: 11, color: '#8892a0' }}>KYC</span>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: user && user.kyc_status === 'approved' ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)', color: user && user.kyc_status === 'approved' ? '#2ecc71' : '#e74c3c' }}>
-                  {user && user.kyc_status === 'approved' ? 'Verified' : 'Not Verified'}
-                </span>
-              </div>
-            </Link>
-          </div>
+      <div style={{ padding: '52px 20px 16px' }}>
+  {/* Company name top */}
+  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#C9A84C" />
+            <stop offset="1" stopColor="#F0D080" />
+          </linearGradient>
+        </defs>
+        <rect width="40" height="40" rx="10" fill="url(#lg1)" />
+        <polyline points="6,30 13,20 20,25 29,11 34,16" stroke="#060a0e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <circle cx="29" cy="11" r="3" fill="#060a0e" />
+        <line x1="6" y1="33" x2="34" y2="33" stroke="#060a0e" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+      </svg>
+      <div>
+        <div style={{ fontSize: 15, fontWeight: 900, color: '#e8edf5', letterSpacing: '-0.3px', lineHeight: 1 }}>CapitalMarket <span style={{ color: '#C9A84C' }}>Pro</span></div>
+        <div style={{ fontSize: 9, color: '#4a5568', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Global Trading Platform</div>
+      </div>
+    </div>
+  </div>
+
+  {/* User greeting row */}
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Link href="/dashboard/profile">
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #C9A84C, #E8D08C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: '#060a0e', cursor: 'pointer', flexShrink: 0 }}>
+          {user ? (user.full_name || user.username || 'U')[0].toUpperCase() : 'U'}
         </div>
+      </Link>
+      <div>
+        <div style={{ fontSize: 14, color: '#8892a0' }}>
+          Hey <span style={{ color: '#e8edf5', fontWeight: 700 }}>{user ? (user.full_name || user.username || 'Trader').split(' ')[0] : 'Trader'}</span> 👋
+        </div>
+        <Link href="/dashboard/kyc" style={{ textDecoration: 'none' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+            <span style={{ fontSize: 11, color: '#8892a0' }}>KYC</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: user && user.kyc_status === 'approved' ? 'rgba(46,204,113,.15)' : 'rgba(231,76,60,.15)', color: user && user.kyc_status === 'approved' ? '#2ecc71' : '#e74c3c' }}>
+              {user && user.kyc_status === 'approved' ? 'Verified' : 'Not Verified'}
+            </span>
+          </div>
+        </Link>
+      </div>
+    </div>
+    <Link href="/dashboard/more?tab=notifications">
+      <div style={{ position: 'relative', width: 42, height: 42, borderRadius: '50%', background: '#0d1117', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <span style={{ fontSize: 20 }}>🔔</span>
+        {notifications > 0 && (
+          <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', border: '2px solid #060a0e' }}>
+            {notifications > 9 ? '9+' : notifications}
+          </div>
+        )}
+      </div>
+    </Link>
+  </div>
         <Link href="/dashboard/more?tab=notifications">
           <div style={{ position: 'relative', width: 42, height: 42, borderRadius: '50%', background: '#0d1117', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <span style={{ fontSize: 20 }}>🔔</span>

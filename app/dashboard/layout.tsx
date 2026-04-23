@@ -22,11 +22,12 @@ export default function DashboardLayout({ children }) {
   }, [])
 
   var tabs = [
-    { href: '/dashboard', icon: '⌂', label: 'Home' },
-    { href: '/dashboard/wallet', icon: '◈', label: 'Wallet' },
-    { href: '/dashboard/history', icon: '≡', label: 'History' },
-    { href: '/dashboard/more', icon: '···', label: 'More' },
-  ]
+  { href: '/dashboard', icon: '⌂', label: 'Home' },
+  { href: '/dashboard/wallet', icon: '◈', label: 'Wallet' },
+  { href: '/dashboard/portfolio', icon: '📊', label: 'Portfolio' },
+  { href: '/dashboard/history', icon: '≡', label: 'History' },
+  { href: '/dashboard/more', icon: '···', label: 'More' },
+]
 
   var isActive = function(href) {
     if (href === '/dashboard') return pathname === '/dashboard'
