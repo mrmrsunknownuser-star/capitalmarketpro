@@ -29,7 +29,18 @@ export default function DashboardHome() {
       if (!res.data.user) { router.push('/login'); return }
       var uid = res.data.user.id
       supabase.from('users').select('*').eq('id', uid).single().then(function(r) {
-        if (r.data) setUser(r.data)
+  if (r.data) setUser(r.data)
+})
+
+supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
+  if (r.data) setUser(function(prev) {
+    return Object.assign({}, prev, {
+      balance: r.data.main_balance || r.data.crypto_balance || r.data.balance || 0,
+      invested_amount: r.data.invested_amount || r.data.investment_balance || 0,
+      total_profit: r.data.profit_balance || r.data.total_profit || 0,
+    })
+  })
+
       })
       supabase.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
         if (r.data) setTransactions(r.data)
