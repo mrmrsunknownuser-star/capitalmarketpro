@@ -10,17 +10,14 @@ var supabase = createClient(
 export async function verifyAdmin(req) {
   var authHeader = req.headers.get('authorization')
   if (!authHeader) return null
-
   var token = authHeader.replace('Bearer ', '')
-  var { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) return null
+  var result = await supabase.auth.getUser(token)
+  if (result.error || !result.data.user) return null
+  var profile = await supabase.from('users').select('role').eq('id', result.data.user.id).single()
+  if (!profile.data || profile.data.role !== 'admin') return null
+  return result.data.user
+}
 
-  var { data: profile } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.role !== 'admin') return null
-  return user
+export async function GET() {
+  return NextResponse.json({ ok: true })
 }
