@@ -1,368 +1,261 @@
+// @ts-nocheck
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 
-const PLANS = [
-  { name: 'Starter', min: 200, max: 999, roi: 5, duration: 7, total: 35, color: '#8b949e', icon: '🌱', features: ['Minimum deposit $200', '5% daily returns', '7 day trading cycle', 'Auto-compounding', 'Email notifications', 'Basic support'] },
-  { name: 'Silver', min: 1000, max: 4999, roi: 8, duration: 14, total: 112, color: '#8b949e', icon: '🥈', features: ['Minimum deposit $1,000', '8% daily returns', '14 day trading cycle', 'Auto-compounding', 'Priority notifications', 'Live chat support'] },
-  { name: 'Gold', min: 5000, max: 19999, roi: 12, duration: 21, total: 252, color: '#C9A84C', icon: '🥇', popular: true, features: ['Minimum deposit $5,000', '12% daily returns', '21 day trading cycle', 'Auto-compounding', 'Real-time alerts', 'Priority support', 'Trading signals'] },
-  { name: 'Platinum', min: 20000, max: 49999, roi: 15, duration: 30, total: 450, color: '#0052FF', icon: '💎', features: ['Minimum deposit $20,000', '15% daily returns', '30 day trading cycle', 'Auto-compounding', 'Dedicated manager', 'VIP support', 'Full signals'] },
-  { name: 'Elite', min: 50000, max: 99999, roi: 20, duration: 30, total: 600, color: '#7B2BF9', icon: '👑', features: ['Minimum deposit $50,000', '20% daily returns', '30 day trading cycle', 'Auto-compounding', 'Personal fund manager', 'Priority withdrawals', 'Custom plan'] },
-  { name: 'Black', min: 100000, max: 999999999, roi: 25, duration: 30, total: 750, color: '#e6edf3', icon: '🖤', features: ['Minimum deposit $100,000', '25% daily returns', '30 day trading cycle', 'Auto-compounding', 'Senior fund manager', 'Instant withdrawals', 'Black card + concierge'] },
-]
+var INVEST_DATA = {
+  crypto: {
+    name: 'Crypto Investment',
+    icon: '₿',
+    color: '#F7931A',
+    bg: 'rgba(247,147,26,.1)',
+    desc: 'Invest in Bitcoin, Ethereum, Solana and 50+ top cryptocurrencies. Our AI-powered crypto strategies deliver consistent monthly returns with automatic rebalancing.',
+    stats: [{ label: 'Min. Investment', val: '$50' }, { label: 'Max. Returns', val: '8%/mo' }, { label: 'Active Investors', val: '42,000+' }, { label: 'Avg. Monthly ROI', val: '4.5%' }],
+    plans: [
+      { name: 'Crypto Starter', roi: '2.0', min: 50, max: 300, duration: '30 days', color: '#3498db', features: ['BTC & ETH exposure', 'Daily profit updates', 'Instant withdrawal', '24/7 support'] },
+      { name: 'Crypto Growth', roi: '3.5', min: 300, max: 1500, duration: '30 days', color: '#F7931A', popular: true, features: ['Top 10 crypto basket', 'Daily profit updates', 'Instant withdrawal', 'Account manager'] },
+      { name: 'Crypto Premium', roi: '5.5', min: 1500, max: 7500, duration: '30 days', color: '#9b59b6', features: ['Full crypto portfolio', 'Real-time analytics', 'Instant withdrawal', 'Priority support'] },
+      { name: 'Crypto Elite', roi: '8.0', min: 7500, max: 30000, duration: '30 days', color: '#C9A84C', features: ['Institutional grade', 'Custom strategy', 'Instant withdrawal', 'Dedicated manager'] },
+    ],
+  },
+  stocks: {
+    name: 'Stock Investment',
+    icon: '📈',
+    color: '#2ecc71',
+    bg: 'rgba(46,204,113,.1)',
+    desc: 'Invest in Tesla, Apple, NVIDIA, Amazon and 200+ global equities. Our professional stock desk manages your portfolio with proven long-term and short-term strategies.',
+    stats: [{ label: 'Min. Investment', val: '$100' }, { label: 'Max. Returns', val: '6%/mo' }, { label: 'Active Investors', val: '38,000+' }, { label: 'Avg. Monthly ROI', val: '3.5%' }],
+    plans: [
+      { name: 'Stock Starter', roi: '1.5', min: 100, max: 500, duration: '30 days', color: '#3498db', features: ['Top 5 US stocks', 'Weekly updates', 'Instant withdrawal', '24/7 support'] },
+      { name: 'Stock Growth', roi: '2.5', min: 500, max: 2000, duration: '30 days', color: '#2ecc71', popular: true, features: ['Top 20 US stocks', 'Daily updates', 'Instant withdrawal', 'Account manager'] },
+      { name: 'Stock Premium', roi: '4.0', min: 2000, max: 10000, duration: '30 days', color: '#9b59b6', features: ['Global stock basket', 'Real-time analytics', 'Instant withdrawal', 'Priority support'] },
+      { name: 'Stock Elite', roi: '6.0', min: 10000, max: 50000, duration: '30 days', color: '#C9A84C', features: ['Institutional equity', 'Custom portfolio', 'Instant withdrawal', 'Dedicated manager'] },
+    ],
+  },
+  forex: {
+    name: 'Forex Investment',
+    icon: '💱',
+    color: '#3498db',
+    bg: 'rgba(52,152,219,.1)',
+    desc: 'Trade EUR/USD, GBP/USD, USD/JPY and 70+ currency pairs. Our expert forex desk uses AI-powered signals and technical analysis to maximize your currency trading returns.',
+    stats: [{ label: 'Min. Investment', val: '$100' }, { label: 'Max. Returns', val: '4.5%/mo' }, { label: 'Active Investors', val: '29,000+' }, { label: 'Avg. Monthly ROI', val: '2.5%' }],
+    plans: [
+      { name: 'Forex Starter', roi: '1.0', min: 100, max: 1000, duration: '30 days', color: '#3498db', features: ['Major pairs only', 'Weekly reports', 'Instant withdrawal', '24/7 support'] },
+      { name: 'Forex Growth', roi: '2.0', min: 1000, max: 5000, duration: '30 days', color: '#2ecc71', popular: true, features: ['Major + minor pairs', 'Daily reports', 'Instant withdrawal', 'Account manager'] },
+      { name: 'Forex Premium', roi: '3.1', min: 5000, max: 25000, duration: '30 days', color: '#9b59b6', features: ['All currency pairs', 'Live analytics', 'Instant withdrawal', 'Priority support'] },
+      { name: 'Forex Elite', roi: '4.5', min: 25000, max: 100000, duration: '30 days', color: '#C9A84C', features: ['Institutional forex', 'Custom strategy', 'Instant withdrawal', 'Dedicated manager'] },
+    ],
+  },
+  realestate: {
+    name: 'Real Estate Investment',
+    icon: '🏠',
+    color: '#9b59b6',
+    bg: 'rgba(155,89,182,.1)',
+    desc: 'Invest in premium real estate portfolios without the complexity of property ownership. Our real estate fund provides stable, inflation-protected monthly returns.',
+    stats: [{ label: 'Min. Investment', val: '$200' }, { label: 'Max. Returns', val: '5%/mo' }, { label: 'Active Investors', val: '18,000+' }, { label: 'Avg. Monthly ROI', val: '2.8%' }],
+    plans: [
+      { name: 'RE Starter', roi: '1.2', min: 200, max: 1000, duration: '30 days', color: '#3498db', features: ['Residential REITs', 'Monthly updates', 'Instant withdrawal', '24/7 support'] },
+      { name: 'RE Growth', roi: '2.0', min: 1000, max: 5000, duration: '30 days', color: '#9b59b6', popular: true, features: ['Mixed property portfolio', 'Weekly updates', 'Instant withdrawal', 'Account manager'] },
+      { name: 'RE Premium', roi: '3.5', min: 5000, max: 25000, duration: '30 days', color: '#e67e22', features: ['Commercial + residential', 'Live analytics', 'Instant withdrawal', 'Priority support'] },
+      { name: 'RE Elite', roi: '5.0', min: 25000, max: 100000, duration: '30 days', color: '#C9A84C', features: ['Institutional RE fund', 'Custom allocation', 'Instant withdrawal', 'Dedicated manager'] },
+    ],
+  },
+}
 
-export default function InvestPage() {
-  const [userId, setUserId] = useState<string | null>(null)
-  const [balance, setBalance] = useState(0)
-  const [activePlans, setActivePlans] = useState<any[]>([])
-  const [selected, setSelected] = useState<typeof PLANS[0] | null>(null)
-  const [amount, setAmount] = useState('')
-  const [activating, setActivating] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const [tab, setTab] = useState<'plans' | 'active'>('plans')
+export default function InvestDetailPage() {
+  var params = useParams()
+  var router = useRouter()
+  var type = params.type
+  var data = INVEST_DATA[type]
 
-  useEffect(() => {
-    const init = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUserId(user.id)
-      const { data: bal } = await supabase.from('balances').select('total_balance').eq('user_id', user.id).single()
-      setBalance(bal?.total_balance || 0)
-      const { data: plans } = await supabase.from('investment_plans').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-      setActivePlans(plans || [])
-    }
-    init()
-  }, [])
+  var [roiAmount, setRoiAmount] = useState('1000')
+  var [roiPlan, setRoiPlan] = useState(0)
+  var [roiMonths, setRoiMonths] = useState(1)
+  var [activeTab, setActiveTab] = useState('plans')
 
-  const activatePlan = async () => {
-    if (!selected || !amount || !userId) return
-    const amt = parseFloat(amount)
-    if (amt < selected.min) { setError(`Minimum for ${selected.name} plan is $${selected.min.toLocaleString()}`); return }
-    if (amt > balance) { setError('Insufficient balance. Please deposit funds first.'); return }
-
-    setActivating(true)
-    setError('')
-    const supabase = createClient()
-
-    const dailyProfit = amt * (selected.roi / 100)
-    const totalProfit = dailyProfit * selected.duration
-    const endsAt = new Date()
-    endsAt.setDate(endsAt.getDate() + selected.duration)
-
-    await supabase.from('investment_plans').insert({
-      user_id: userId,
-      plan_name: selected.name,
-      amount: amt,
-      roi_percent: selected.roi,
-      duration_days: selected.duration,
-      daily_profit: dailyProfit,
-      total_profit: totalProfit,
-      status: 'active',
-      ends_at: endsAt.toISOString(),
-      last_credited: new Date().toISOString(),
-    })
-
-    // Deduct from balance
-    const { data: bal } = await supabase.from('balances').select('total_balance, total_pnl').eq('user_id', userId).single()
-    await supabase.from('balances').update({
-      total_balance: (bal?.total_balance || 0) - amt,
-      available_balance: (bal?.total_balance || 0) - amt,
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId)
-
-    await supabase.from('notifications').insert({
-      user_id: userId,
-      title: `✅ ${selected.name} Plan Activated!`,
-      message: `Your ${selected.name} investment plan of $${amt.toLocaleString()} is now active. You'll earn $${dailyProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })} daily for ${selected.duration} days.`,
-      type: 'success', is_read: false,
-    })
-
-    // Notify admin
-    const { data: admin } = await supabase.from('users').select('id').eq('role', 'admin').single()
-    if (admin?.id) {
-      await supabase.from('notifications').insert({
-        recipient_role: 'admin',
-        title: `💹 New Investment Plan Activated`,
-        message: `User activated ${selected.name} plan with $${amt.toLocaleString()}. Daily profit: $${dailyProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
-        type: 'info', is_read: false,
-      })
-    }
-
-    setMessage(`✅ ${selected.name} plan activated! Earning $${dailyProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}/day.`)
-    setBalance(prev => prev - amt)
-    setSelected(null)
-    setAmount('')
-    setActivating(false)
-    setTimeout(() => setMessage(''), 5000)
-
-    const { data: plans } = await supabase.from('investment_plans').select('*').eq('user_id', userId).order('created_at', { ascending: false })
-    setActivePlans(plans || [])
-    setTab('active')
+  if (!data) {
+    router.push('/dashboard')
+    return null
   }
 
-  const getDaysLeft = (endsAt: string) => {
-    const diff = new Date(endsAt).getTime() - Date.now()
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-  }
+  var G = '#C9A84C'
+  var GG = 'linear-gradient(135deg, #C9A84C, #E8D08C)'
 
-  const getProgress = (plan: any) => {
-    const total = plan.duration_days
-    const left = getDaysLeft(plan.ends_at)
-    return Math.min(100, ((total - left) / total) * 100)
-  }
+  var selectedPlan = data.plans[roiPlan]
+  var amount = parseFloat(roiAmount) || 0
+  var monthlyReturn = amount * (parseFloat(selectedPlan.roi) / 100)
+  var totalReturn = monthlyReturn * roiMonths
+  var totalValue = amount + totalReturn
 
   return (
-    <div style={{ padding: '16px 16px 80px', fontFamily: 'monospace' }}>
-      <style>{`
-        .plans-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
-        @media (max-width: 900px) { .plans-grid { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 500px) { .plans-grid { grid-template-columns: 1fr !important; } }
-      `}</style>
+    <div style={{ background: '#060a0e', minHeight: '100vh', paddingBottom: 30 }}>
 
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3', marginBottom: 4 }}>Investment Plans</div>
-        <div style={{ fontSize: 13, color: '#484f58' }}>Fully automated AI trading — daily returns 24/7</div>
+      {/* Header */}
+      <div style={{ padding: '52px 20px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button onClick={function() { router.back() }} style={{ width: 40, height: 40, borderRadius: 12, background: '#0d1117', border: '1px solid #1e2530', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#8892a0' }}>←</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: data.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>{data.icon}</div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#e8edf5' }}>{data.name}</div>
+            <div style={{ fontSize: 11, color: '#4a5568' }}>Returns up to {data.plans[data.plans.length - 1].roi}% monthly</div>
+          </div>
+        </div>
       </div>
 
-      {message && <div style={{ background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#3fb950' }}>{message}</div>}
-      {error && <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#f85149', display: 'flex', justifyContent: 'space-between' }}><span>⚠ {error}</span><button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: '#f85149', cursor: 'pointer' }}>✕</button></div>}
-
-      {/* Balance */}
-      <div style={{ background: 'linear-gradient(135deg,#0d1117,#161b22)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 14, padding: '16px 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 11, color: '#484f58', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Available Balance</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#C9A84C' }}>${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-        </div>
-        <Link href="/dashboard/deposit">
-          <button style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>+ Deposit</button>
-        </Link>
+      {/* Stats row */}
+      <div style={{ margin: '0 16px 20px', display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+        {data.stats.map(function(stat) {
+          return (
+            <div key={stat.label} style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 14, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 5 }}>{stat.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: data.color }}>{stat.val}</div>
+            </div>
+          )
+        })}
       </div>
 
-      {/* AI Banner */}
-      <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ fontSize: 28 }}>🤖</span>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#C9A84C', marginBottom: 3 }}>100% Automated AI Trading</div>
-          <div style={{ fontSize: 11, color: '#8b949e', lineHeight: 1.7 }}>Select a plan, enter your amount, and our AI starts trading immediately — earning you daily returns automatically.</div>
-        </div>
+      {/* Description */}
+      <div style={{ margin: '0 16px 20px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, padding: '16px' }}>
+        <div style={{ fontSize: 13, color: '#8892a0', lineHeight: 1.75 }}>{data.desc}</div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#0d1117', border: '1px solid #161b22', borderRadius: 12, padding: 4 }}>
-        {[{ id: 'plans', label: '💹 Investment Plans' }, { id: 'active', label: `📊 My Plans ${activePlans.length > 0 ? `(${activePlans.length})` : ''}` }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: 'none', background: tab === t.id ? 'rgba(201,168,76,0.15)' : 'transparent', color: tab === t.id ? '#C9A84C' : '#8b949e', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', fontWeight: tab === t.id ? 700 : 400 }}>
-            {t.label}
-          </button>
-        ))}
+      <div style={{ margin: '0 16px 20px', display: 'flex', gap: 8 }}>
+        {['plans', 'calculator'].map(function(tab) {
+          return (
+            <button key={tab} onClick={function() { setActiveTab(tab) }} style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: activeTab === tab ? GG : '#0d1117', color: activeTab === tab ? '#060a0e' : '#4a5568', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', textTransform: 'capitalize', border: activeTab === tab ? 'none' : '1px solid #1e2530' }}>
+              {tab === 'plans' ? 'Investment Plans' : 'ROI Calculator'}
+            </button>
+          )
+        })}
       </div>
 
-      {/* PLANS TAB */}
-      {tab === 'plans' && (
-        <div className="plans-grid">
-          {PLANS.map(plan => {
-            const activePlan = activePlans.find(p => p.plan_name === plan.name && p.status === 'active')
+      {/* Plans Tab */}
+      {activeTab === 'plans' && (
+        <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {data.plans.map(function(plan, i) {
             return (
-              <div key={plan.name} style={{ background: '#0d1117', border: `2px solid ${selected?.name === plan.name ? plan.color : plan.color + '22'}`, borderRadius: 16, overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
-                onClick={() => { setSelected(plan); setAmount(plan.min.toString()) }}>
-                {(plan as any).popular && (
-                  <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#C9A84C', color: '#060a0f', fontSize: 8, fontWeight: 800, padding: '2px 10px', borderRadius: 20, whiteSpace: 'nowrap', zIndex: 1 }}>⭐ MOST POPULAR</div>
+              <div key={plan.name} style={{ background: '#0d1117', border: '1px solid ' + (plan.popular ? 'rgba(201,168,76,.4)' : '#1e2530'), borderRadius: 20, padding: '22px 20px', position: 'relative', overflow: 'hidden' }}>
+                {plan.popular && (
+                  <div style={{ position: 'absolute', top: -1, right: 20, background: GG, color: '#060a0e', fontSize: 9, fontWeight: 800, padding: '4px 12px', borderRadius: '0 0 10px 10px' }}>POPULAR</div>
                 )}
-                {activePlan && (
-                  <div style={{ position: 'absolute', top: 10, right: 10, background: '#3fb950', color: '#fff', fontSize: 8, fontWeight: 800, padding: '2px 8px', borderRadius: 20 }}>ACTIVE</div>
-                )}
-
-                <div style={{ padding: '20px 18px 16px', background: `${plan.color}08` }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: plan.color, textTransform: 'uppercase', marginBottom: 12 }}>{plan.icon} {plan.name}</div>
-                  <div style={{ textAlign: 'center', background: `${plan.color}18`, borderRadius: 10, padding: '12px', marginBottom: 12 }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: plan.color, lineHeight: 1 }}>{plan.roi}%</div>
-                    <div style={{ fontSize: 10, color: '#8b949e', marginTop: 4 }}>Daily · {plan.total}% Total</div>
-                    <div style={{ fontSize: 10, color: plan.color, marginTop: 2, fontWeight: 700 }}>{plan.duration} Days</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#e8edf5', marginBottom: 4 }}>{plan.name}</div>
+                    <div style={{ fontSize: 11, color: '#4a5568' }}>${plan.min.toLocaleString()} — ${plan.max.toLocaleString()}</div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
-                    <div style={{ background: '#161b22', borderRadius: 6, padding: '7px 8px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: '#484f58', marginBottom: 2 }}>MIN</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3' }}>${plan.min.toLocaleString()}</div>
-                    </div>
-                    <div style={{ background: '#161b22', borderRadius: 6, padding: '7px 8px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: '#484f58', marginBottom: 2 }}>MAX</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#e6edf3' }}>{plan.max > 999999 ? 'Unlimited' : `$${plan.max.toLocaleString()}`}</div>
-                    </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: plan.popular ? G : data.color }}>{plan.roi}%</div>
+                    <div style={{ fontSize: 10, color: '#4a5568' }}>per month</div>
                   </div>
-                  {plan.features.slice(0, 4).map((f, i) => (
-                    <div key={i} style={{ fontSize: 11, color: '#8b949e', marginBottom: 5, display: 'flex', gap: 6 }}>
-                      <span style={{ color: plan.color, flexShrink: 0 }}>✓</span>{f}
-                    </div>
-                  ))}
                 </div>
-
-                <div style={{ padding: '14px 18px', borderTop: `1px solid ${plan.color}22` }}>
-                  <button
-                    onClick={e => { e.stopPropagation(); setSelected(plan); setAmount(plan.min.toString()) }}
-                    style={{ width: '100%', padding: '11px 0', background: selected?.name === plan.name ? `linear-gradient(135deg,${plan.color},${plan.color}cc)` : `${plan.color}0d`, border: `1px solid ${plan.color}`, borderRadius: 10, color: selected?.name === plan.name ? (plan.color === '#e6edf3' ? '#060a0f' : '#fff') : plan.color, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-                    {activePlan ? '✅ Active — Invest More' : selected?.name === plan.name ? '✓ Selected' : `Invest ${plan.icon}`}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+                  {plan.features.map(function(feat) {
+                    return (
+                      <div key={feat} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#8892a0' }}>
+                        <span style={{ color: '#2ecc71', fontSize: 11, flexShrink: 0 }}>✓</span>
+                        {feat}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, padding: '12px', background: '#141920', borderRadius: 12, fontSize: 13 }}>
+                  <span style={{ color: '#4a5568' }}>Duration: <strong style={{ color: '#e8edf5' }}>{plan.duration}</strong></span>
+                  <span style={{ color: '#4a5568' }}>Min: <strong style={{ color: G }}>${plan.min}</strong></span>
+                </div>
+                <Link href={'/dashboard/deposit?plan=' + plan.name.toLowerCase().replace(/\s/g, '-')}>
+                  <button style={{ width: '100%', padding: '13px', background: plan.popular ? GG : 'transparent', border: plan.popular ? 'none' : '1px solid rgba(201,168,76,.3)', borderRadius: 12, color: plan.popular ? '#060a0e' : G, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                    Invest Now →
                   </button>
-                </div>
+                </Link>
               </div>
             )
           })}
         </div>
       )}
 
-      {/* ACTIVE PLANS TAB */}
-      {tab === 'active' && (
-        <div>
-          {activePlans.length === 0 ? (
-            <div style={{ background: '#0d1117', border: '1px solid #161b22', borderRadius: 14, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>💹</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#e6edf3', marginBottom: 8 }}>No active plans yet</div>
-              <div style={{ fontSize: 12, color: '#484f58', marginBottom: 20 }}>Activate an investment plan to start earning daily returns</div>
-              <button onClick={() => setTab('plans')} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#C9A84C,#E8D08C)', color: '#060a0f', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'monospace' }}>
-                View Plans →
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {activePlans.map(plan => {
-                const planDef = PLANS.find(p => p.name === plan.plan_name) || PLANS[0]
-                const daysLeft = getDaysLeft(plan.ends_at)
-                const progress = getProgress(plan)
-                const daysCompleted = plan.duration_days - daysLeft
-                const earnedSoFar = plan.daily_profit * daysCompleted
+      {/* ROI Calculator Tab */}
+      {activeTab === 'calculator' && (
+        <div style={{ padding: '0 16px' }}>
+          <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 20, padding: '24px 20px', marginBottom: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#e8edf5', marginBottom: 18 }}>ROI Calculator</div>
 
-                return (
-                  <div key={plan.id} style={{ background: '#0d1117', border: `1px solid ${planDef.color}33`, borderRadius: 16, padding: 22 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: planDef.color, textTransform: 'uppercase', marginBottom: 4 }}>{planDef.icon} {plan.plan_name} Plan</div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: '#e6edf3' }}>${plan.amount?.toLocaleString()}</div>
-                        <div style={{ fontSize: 11, color: '#484f58' }}>Invested · {new Date(plan.started_at).toLocaleDateString()}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 11, color: '#484f58', marginBottom: 4 }}>Status</div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: plan.status === 'active' ? '#3fb950' : '#F7A600', background: plan.status === 'active' ? 'rgba(63,185,80,0.1)' : 'rgba(247,166,0,0.1)', padding: '4px 12px', borderRadius: 20 }}>
-                          {plan.status === 'active' ? '🟢 ACTIVE' : '✅ COMPLETE'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
-                      {[
-                        { l: 'Daily ROI', v: `${plan.roi_percent}%`, c: planDef.color },
-                        { l: 'Daily Profit', v: `$${plan.daily_profit?.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, c: '#3fb950' },
-                        { l: 'Earned So Far', v: `$${earnedSoFar.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, c: '#C9A84C' },
-                        { l: 'Total Profit', v: `$${plan.total_profit?.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, c: '#3fb950' },
-                      ].map(s => (
-                        <div key={s.l} style={{ background: '#161b22', borderRadius: 8, padding: '10px', textAlign: 'center' }}>
-                          <div style={{ fontSize: 8, color: '#484f58', marginBottom: 4, textTransform: 'uppercase' }}>{s.l}</div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color: s.c }}>{s.v}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Progress */}
-                    <div style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#484f58', marginBottom: 6 }}>
-                        <span>Day {daysCompleted} of {plan.duration_days}</span>
-                        <span>{daysLeft > 0 ? `${daysLeft} days left` : 'Completed'}</span>
-                      </div>
-                      <div style={{ height: 6, background: '#161b22', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ width: `${progress}%`, height: '100%', background: `linear-gradient(90deg,${planDef.color},${planDef.color}cc)`, borderRadius: 3, transition: 'width 0.5s ease' }} />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#484f58' }}>
-                      <span>Started: {new Date(plan.started_at).toLocaleDateString()}</span>
-                      <span>Ends: {new Date(plan.ends_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Activation modal */}
-      {selected && tab === 'plans' && (
-        <div onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
-          <div style={{ background: '#0d1117', border: `1px solid ${selected.color}44`, borderRadius: 20, width: '100%', maxWidth: 440, padding: 28, fontFamily: 'monospace' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#e6edf3' }}>{selected.icon} Activate {selected.name} Plan</div>
-              <button onClick={() => setSelected(null)} style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, color: '#8b949e', cursor: 'pointer', width: 30, height: 30, fontSize: 14 }}>✕</button>
-            </div>
-
-            {/* Plan summary */}
-            <div style={{ background: `${selected.color}0d`, border: `1px solid ${selected.color}22`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, textAlign: 'center' }}>
-                {[{ l: 'Daily ROI', v: `${selected.roi}%` }, { l: 'Duration', v: `${selected.duration} Days` }, { l: 'Total Return', v: `${selected.total}%` }].map(s => (
-                  <div key={s.l}>
-                    <div style={{ fontSize: 9, color: '#484f58', textTransform: 'uppercase', marginBottom: 4 }}>{s.l}</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: selected.color }}>{s.v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Amount */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Investment Amount (USD)</label>
-              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder={`Min $${selected.min.toLocaleString()}`}
-                style={{ width: '100%', background: '#161b22', border: `1px solid ${selected.color}44`, borderRadius: 10, padding: '14px', color: selected.color, fontSize: 22, fontWeight: 800, outline: 'none', boxSizing: 'border-box' as const, fontFamily: 'monospace' }}
-                onFocus={e => e.target.style.borderColor = selected.color}
-                onBlur={e => e.target.style.borderColor = `${selected.color}44`}
-              />
-            </div>
-
-            {/* Quick amounts */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-              {[selected.min, selected.min * 2, selected.min * 5].filter(v => v <= balance).map(v => (
-                <button key={v} onClick={() => setAmount(v.toString())}
-                  style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${selected.color}33`, background: 'transparent', color: selected.color, fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>
-                  ${v.toLocaleString()}
-                </button>
-              ))}
-            </div>
-
-            {/* Projected earnings */}
-            {amount && parseFloat(amount) >= selected.min && (
-              <div style={{ background: '#161b22', borderRadius: 10, padding: 14, marginBottom: 18 }}>
-                <div style={{ fontSize: 11, color: '#484f58', marginBottom: 10, textTransform: 'uppercase' }}>Projected Earnings</div>
-                {[
-                  { l: 'Daily Profit', v: `$${(parseFloat(amount) * selected.roi / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-                  { l: 'Total Profit', v: `$${(parseFloat(amount) * selected.roi / 100 * selected.duration).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-                  { l: 'You Receive', v: `$${(parseFloat(amount) + parseFloat(amount) * selected.roi / 100 * selected.duration).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-                ].map(item => (
-                  <div key={item.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #21262d' }}>
-                    <span style={{ fontSize: 12, color: '#484f58' }}>{item.l}</span>
-                    <span style={{ fontSize: 12, color: '#3fb950', fontWeight: 700 }}>{item.v}</span>
-                  </div>
-                ))}
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8892a0', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.08em' }}>Investment Amount (USD)</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#4a5568', fontSize: 16, fontWeight: 700 }}>$</span>
+                <input
+                  type="number"
+                  value={roiAmount}
+                  onChange={function(e) { setRoiAmount(e.target.value) }}
+                  style={{ width: '100%', background: '#141920', border: '1.5px solid #1e2530', borderRadius: 12, padding: '13px 14px 13px 32px', color: '#e8edf5', fontSize: 18, fontWeight: 800, outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                  onFocus={function(e) { e.target.style.borderColor = '#C9A84C' }}
+                  onBlur={function(e) { e.target.style.borderColor = '#1e2530' }}
+                />
               </div>
-            )}
-
-            {error && <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#f85149' }}>⚠ {error}</div>}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
-              <button onClick={() => setSelected(null)} style={{ padding: '13px 0', borderRadius: 12, border: '1px solid #21262d', background: 'transparent', color: '#8b949e', fontSize: 13, cursor: 'pointer', fontFamily: 'monospace' }}>Cancel</button>
-              <button onClick={activatePlan} disabled={activating || !amount || parseFloat(amount) < selected.min}
-                style={{ padding: '13px 0', background: !amount || parseFloat(amount) < selected.min || activating ? '#161b22' : `linear-gradient(135deg,${selected.color},${selected.color}cc)`, border: 'none', borderRadius: 12, color: !amount || parseFloat(amount) < selected.min || activating ? '#484f58' : selected.color === '#e6edf3' ? '#060a0f' : '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'monospace' }}>
-                {activating ? '⟳ Activating...' : `🚀 Activate Plan`}
-              </button>
             </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8892a0', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.08em' }}>Select Plan</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {data.plans.map(function(plan, i) {
+                  return (
+                    <button key={i} onClick={function() { setRoiPlan(i) }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: roiPlan === i ? 'rgba(201,168,76,.1)' : '#141920', border: '1.5px solid ' + (roiPlan === i ? 'rgba(201,168,76,.5)' : '#1e2530'), borderRadius: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all .15s' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: roiPlan === i ? '#e8edf5' : '#8892a0' }}>{plan.name}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: roiPlan === i ? G : '#4a5568' }}>{plan.roi}%/mo</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8892a0', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.08em' }}>Duration: {roiMonths} Month{roiMonths > 1 ? 's' : ''}</label>
+              <input type="range" min="1" max="12" value={roiMonths} onChange={function(e) { setRoiMonths(parseInt(e.target.value)) }} style={{ width: '100%', accentColor: G, height: 4 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4a5568', marginTop: 4 }}>
+                <span>1 month</span>
+                <span>12 months</span>
+              </div>
+            </div>
+
+            {/* Results */}
+            <div style={{ background: 'linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03))', border: '1px solid rgba(201,168,76,.2)', borderRadius: 16, padding: '20px' }}>
+              <div style={{ fontSize: 12, color: '#4a5568', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 16 }}>Estimated Returns</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div style={{ background: '#0d1117', borderRadius: 12, padding: '14px' }}>
+                  <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 5 }}>Monthly Profit</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#2ecc71' }}>${monthlyReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div style={{ background: '#0d1117', borderRadius: 12, padding: '14px' }}>
+                  <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 5 }}>Total Profit</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#2ecc71' }}>${totalReturn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+              </div>
+              <div style={{ background: '#0d1117', borderRadius: 12, padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 4 }}>Total Value After {roiMonths} Month{roiMonths > 1 ? 's' : ''}</div>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: G }}>${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, color: '#4a5568', marginBottom: 4 }}>ROI</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#2ecc71' }}>+{(parseFloat(selectedPlan.roi) * roiMonths).toFixed(1)}%</div>
+                </div>
+              </div>
+            </div>
+
+            <Link href={'/dashboard/deposit?plan=' + selectedPlan.name.toLowerCase().replace(/\s/g, '-')}>
+              <button style={{ width: '100%', marginTop: 16, padding: '14px', background: GG, border: 'none', borderRadius: 12, color: '#060a0e', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: '0 6px 20px rgba(201,168,76,.25)' }}>
+                Start Investing ${amount > 0 ? amount.toLocaleString() : '0'} →
+              </button>
+            </Link>
+          </div>
+          <div style={{ background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, color: '#2a3140', lineHeight: 1.7 }}>Disclaimer: ROI calculations are estimates based on historical performance. Actual returns may vary. All investments carry risk.</div>
           </div>
         </div>
       )}
-
-      <div style={{ marginTop: 24, textAlign: 'center', padding: '16px 0', borderTop: '1px solid #161b22' }}>
-        <div style={{ fontSize: 10, color: '#484f58' }}>© 2025 CapitalMarket Pro · All Rights Reserved · Past performance does not guarantee future results</div>
-      </div>
     </div>
   )
 }
