@@ -52,7 +52,7 @@ export async function POST(req) {
 
     await resend.emails.send({
       from: 'CapitalMarket Pro <noreply@capitalmarket-pro.com>',
-      to: 'admincapitalmarketpro@gmail.com',
+      to: 'mr.mrsunknownuser@gmail.com',
       subject: '👁 New Visitor from ' + geo.country + ' — ' + (body.page || '/'),
       html: `
         <div style="background:#060a0e;padding:32px;font-family:Inter,sans-serif;border-radius:16px;max-width:500px;margin:0 auto;border:1px solid #1e2530">
