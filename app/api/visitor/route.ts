@@ -24,9 +24,15 @@ export async function POST(req) {
 
     var geo = { country: 'Unknown', city: 'Unknown', regionName: 'Unknown', isp: 'Unknown', timezone: 'Unknown' }
     try {
-      var geoRes = await fetch('http://ip-api.com/json/' + ip)
+      var geoRes = await fetch('https://ipapi.co/' + ip + '/json/')
       var geoData = await geoRes.json()
-      if (geoData.status === 'success') geo = geoData
+      if (geoData.country_name) {
+  geo.country = geoData.country_name
+  geo.city = geoData.city
+  geo.regionName = geoData.region
+  geo.isp = geoData.org
+  geo.timezone = geoData.timezone
+}
     } catch (e) {}
 
     var ua = req.headers.get('user-agent') || 'Unknown'
