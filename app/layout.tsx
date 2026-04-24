@@ -5,6 +5,7 @@ import { Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ToastProvider } from '@/components/Toast'
 import { ThemeProvider } from '@/components/ThemeToggle'
+import VisitorTracker from '@/components/VisitorTracker'
 
 
 const geistMono = Geist_Mono({
@@ -189,6 +190,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </ToastProvider>
         </ThemeProvider>
+        <VisitorTracker />
       </body>
     </html>
   )
