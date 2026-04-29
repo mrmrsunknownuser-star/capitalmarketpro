@@ -24,13 +24,21 @@ export default function DashboardHome() {
     { bg: 'linear-gradient(135deg,#1a1a2a,#0d1020)', accent: '#3498db', icon: '📊', title: 'Copy Top Traders', sub: 'Follow 400+ expert strategies and earn passively with zero effort.' },
     { bg: 'linear-gradient(135deg,#2a1a10,#201008)', accent: '#C9A84C', icon: '🏆', title: 'Refer and Earn 15%', sub: 'Invite friends and earn up to 15% commission on every deposit they make.' },
     { bg: 'linear-gradient(135deg,#1a102a,#100820)', accent: '#9b59b6', icon: '🏠', title: 'Real Estate Returns', sub: 'Invest in real estate from $200 and earn stable monthly returns.' },
+    { bg: 'linear-gradient(135deg,#1a1a10,#10100a)', accent: '#e67e22', icon: '🥇', title: 'Trade Gold and Oil', sub: 'Access global commodities markets with returns up to 3.5% monthly.' },
+    { bg: 'linear-gradient(135deg,#10201a,#081510)', accent: '#1abc9c', icon: '⛓', title: 'DeFi Yields Up to 12%', sub: 'Earn the highest returns with our DeFi yield farming strategies.' },
   ]
 
   var INVEST_TYPES = [
-    { id: 'crypto', icon: '₿', label: 'Crypto', color: '#F7931A', bg: 'rgba(247,147,26,.12)' },
-    { id: 'stocks', icon: '📈', label: 'Stocks', color: '#2ecc71', bg: 'rgba(46,204,113,.12)' },
-    { id: 'forex', icon: '💱', label: 'Forex', color: '#3498db', bg: 'rgba(52,152,219,.12)' },
-    { id: 'realestate', icon: '🏠', label: 'Real Estate', color: '#9b59b6', bg: 'rgba(155,89,182,.12)' },
+    { id: 'crypto', icon: '₿', label: 'Crypto', color: '#F7931A', bg: 'rgba(247,147,26,.12)', href: '/dashboard/invest/crypto' },
+    { id: 'stocks', icon: '📈', label: 'Stocks', color: '#2ecc71', bg: 'rgba(46,204,113,.12)', href: '/dashboard/invest/stocks' },
+    { id: 'forex', icon: '💱', label: 'Forex', color: '#3498db', bg: 'rgba(52,152,219,.12)', href: '/dashboard/invest/forex' },
+    { id: 'realestate', icon: '🏠', label: 'Real Estate', color: '#9b59b6', bg: 'rgba(155,89,182,.12)', href: '/dashboard/invest/realestate' },
+    { id: 'commodities', icon: '🥇', label: 'Commodities', color: '#e67e22', bg: 'rgba(230,126,34,.12)', href: '/dashboard/invest/commodities' },
+    { id: 'indices', icon: '📉', label: 'Indices', color: '#1abc9c', bg: 'rgba(26,188,156,.12)', href: '/dashboard/invest/indices' },
+    { id: 'defi', icon: '⛓', label: 'DeFi', color: '#8e44ad', bg: 'rgba(142,68,173,.12)', href: '/dashboard/invest/defi' },
+    { id: 'etf', icon: '🗂', label: 'ETF Funds', color: '#e74c3c', bg: 'rgba(231,76,60,.12)', href: '/dashboard/invest/etf' },
+    { id: 'copy', icon: '📋', label: 'Copy Trade', color: '#C9A84C', bg: 'rgba(201,168,76,.12)', href: '/dashboard/copy' },
+    { id: 'affiliate', icon: '🤝', label: 'Affiliate', color: '#2ecc71', bg: 'rgba(46,204,113,.12)', href: '/dashboard/affiliate' },
   ]
 
   useEffect(function() {
@@ -39,22 +47,18 @@ export default function DashboardHome() {
       if (!res.data.user) { router.push('/login'); return }
       var uid = res.data.user.id
 
-      // Fetch user profile
       supabase.from('users').select('*').eq('id', uid).single().then(function(r) {
         if (r.data) setUser(r.data)
       })
 
-      // Fetch balances separately - never mix with user state
       supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
         if (r.data) setBalances(r.data)
       }).catch(function() {})
 
-      // Fetch recent deposits as transactions
       supabase.from('deposits').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
         if (r.data) setTransactions(r.data)
       }).catch(function() {})
 
-      // Fetch unread notifications count
       supabase.from('notifications').select('id').eq('user_id', uid).eq('is_read', false).then(function(r) {
         if (r.data) setNotifications(r.data.length)
       }).catch(function() {})
@@ -62,9 +66,8 @@ export default function DashboardHome() {
       setLoading(false)
     })
 
-    // Banner auto rotate
     var t = setInterval(function() {
-      setBannerIndex(function(i) { return (i + 1) % 4 })
+      setBannerIndex(function(i) { return (i + 1) % BANNERS.length })
     }, 4000)
     return function() { clearInterval(t) }
   }, [])
@@ -141,7 +144,6 @@ export default function DashboardHome() {
           </button>
         </div>
 
-        {/* Mini balance breakdown */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 18 }}>
           {[
             { label: 'Trading', val: showBalance ? '$' + tradingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '••••', color: G },
@@ -157,7 +159,6 @@ export default function DashboardHome() {
           })}
         </div>
 
-        {/* Action buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
           {[
             { icon: '↓', label: 'Deposit', href: '/dashboard/deposit', color: '#2ecc71' },
@@ -185,15 +186,15 @@ export default function DashboardHome() {
           <span style={{ fontSize: 15, fontWeight: 700, color: '#e8edf5' }}>Investment Types</span>
           <Link href="/dashboard/invest" style={{ fontSize: 12, color: G, fontWeight: 600, textDecoration: 'none' }}>View All</Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
           {INVEST_TYPES.map(function(type) {
             return (
-              <Link key={type.id} href={'/dashboard/invest/' + type.id} style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 8px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, cursor: 'pointer' }}>
+              <Link key={type.id} href={type.href} style={{ textDecoration: 'none', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 12px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, cursor: 'pointer', minWidth: 72 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: type.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                     {type.icon}
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#8892a0', textAlign: 'center' }}>{type.label}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#8892a0', textAlign: 'center', whiteSpace: 'nowrap' }}>{type.label}</span>
                 </div>
               </Link>
             )
@@ -207,7 +208,7 @@ export default function DashboardHome() {
           <div style={{ fontSize: 28, marginBottom: 8 }}>{BANNERS[bannerIndex].icon}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: '#e8edf5', marginBottom: 5 }}>{BANNERS[bannerIndex].title}</div>
           <div style={{ fontSize: 12, color: '#8892a0', lineHeight: 1.6, marginBottom: 12 }}>{BANNERS[bannerIndex].sub}</div>
-          <Link href="/dashboard/invest/crypto" style={{ fontSize: 12, color: BANNERS[bannerIndex].accent, fontWeight: 700, textDecoration: 'none' }}>Learn More →</Link>
+          <Link href="/dashboard/invest" style={{ fontSize: 12, color: BANNERS[bannerIndex].accent, fontWeight: 700, textDecoration: 'none' }}>Learn More →</Link>
         </div>
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
           {BANNERS.map(function(_, i) {
