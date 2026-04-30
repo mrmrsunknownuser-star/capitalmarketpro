@@ -59,20 +59,34 @@ export default function TradingPage() {
   var balanceRef = useRef(0)
   var notifTimeout = useRef(null)
 
-  useEffect(function() {
-    var supabase = createClient()
-    supabase.auth.getUser().then(function(res) {
-      if (!res.data.user) return
-      var uid = res.data.user.id
-      setUserId(uid)
-      userIdRef.current = uid
-      supabase.from('balances').select('available_balance').eq('user_id', uid).single().then(function(r) {
-        var b = r.data && r.data.available_balance || 0
-        setBalance(b)
-        balanceRef.current = b
-      })
+ useEffect(function() {
+  var supabase = createClient()
+  supabase.auth.getUser().then(function(res) {
+    if (!res.data.user) return
+    var uid = res.data.user.id
+    userIdRef.current = uid
+
+    supabase.from('balances').select('available_balance').eq('user_id', uid).single().then(function(r) {
+      var b = r.data && r.data.available_balance || 0
+      setBalance(b)
+      balanceRef.current = b
     })
-  }, [])
+
+    // Realtime balance updates
+    supabase.channel('trading-balance-' + uid)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'balances',
+        filter: 'user_id=eq.' + uid,
+      }, function(payload) {
+        var newBal = payload.new && payload.new.available_balance || 0
+        setBalance(newBal)
+        balanceRef.current = newBal
+      })
+      .subscribe()
+  })
+}, [])
 
   useEffect(function() {
     var now = Date.now()
@@ -131,13 +145,41 @@ export default function TradingPage() {
             notifTimeout.current = setTimeout(function() { setNotification(null) }, 3500)
             var uid = userIdRef.current
             if (uid) {
-              var supabase = createClient()
-              supabase.from('balances').select('available_balance,total_pnl').eq('user_id', uid).single().then(function(r) {
-                if (r.data) {
-                  supabase.from('balances').update({ available_balance: Math.max(0, (r.data.available_balance || 0) + finalProfit), total_pnl: (r.data.total_pnl || 0) + finalProfit, updated_at: new Date().toISOString() }).eq('user_id', uid).then(function() {})
-                }
-              })
-            }
+  var supabase = createClient()
+  supabase.from('balances').select('available_balance,total_pnl').eq('user_id', uid).single().then(function(r) {
+    if (r.data) {
+      var newBalance = Math.max(0, (r.data.available_balance || 0) + finalProfit)
+      var newPnl = (r.data.total_pnl || 0) + finalProfit
+      supabase.from('balances').update({
+        available_balance: newBalance,
+        total_pnl: newPnl,
+        updated_at: new Date().toISOString(),
+      }).eq('user_id', uid).then(function() {
+        balanceRef.current = newBalance
+      })
+    }
+  })
+
+  // Record in deposits table so it shows in history
+  supabase.from('deposits').insert({
+    user_id: uid,
+    amount: Math.abs(finalProfit),
+    type: isWin ? 'profit' : 'loss',
+    status: 'approved',
+    plan: trade.pair + ' ' + trade.direction + ' Trade',
+    created_at: new Date().toISOString(),
+  }).then(function() {})
+
+  // Send notification
+  supabase.from('notifications').insert({
+    user_id: uid,
+    title: isWin ? '🎉 Trade Won! +$' + finalProfit.toFixed(2) : '📉 Trade Closed -$' + trade.amount.toFixed(2),
+    message: 'Your ' + trade.direction + ' trade on ' + trade.pair + (isWin ? ' was profitable! You earned +$' + finalProfit.toFixed(2) : ' closed at a loss of -$' + trade.amount.toFixed(2)) + '. Balance updated.',
+    type: isWin ? 'success' : 'info',
+    is_read: false,
+    recipient_role: 'user',
+  }).then(function() {})
+}
             updated.push(Object.assign({}, trade, { timeLeft: -3, result: isWin ? 'WIN' : 'LOSS' }))
           } else {
             updated.push(Object.assign({}, trade, { timeLeft: newTimeLeft }))

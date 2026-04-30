@@ -54,6 +54,19 @@ export default function DashboardHome() {
       supabase.from('balances').select('*').eq('user_id', uid).single().then(function(r) {
         if (r.data) setBalances(r.data)
       }).catch(function() {})
+    // Realtime balance updates
+supabase.channel('dashboard-balance-' + uid)
+  .on('postgres_changes', {
+    event: 'UPDATE',
+    schema: 'public',
+    table: 'balances',
+    filter: 'user_id=eq.' + uid,
+  }, function(payload) {
+    if (payload.new) {
+      setBalances(payload.new)
+    }
+  })
+  .subscribe()
 
       supabase.from('deposits').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(5).then(function(r) {
         if (r.data) setTransactions(r.data)
