@@ -181,27 +181,34 @@ export default function DashboardHome() {
       </div>
 
       {/* ── INVESTMENT TYPES ── */}
-      <div style={{ padding: '0 16px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#e8edf5' }}>Investment Types</span>
-          <Link href="/dashboard/invest" style={{ fontSize: 12, color: G, fontWeight: 600, textDecoration: 'none' }}>View All</Link>
-        </div>
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
-          {INVEST_TYPES.map(function(type) {
-            return (
-              <Link key={type.id} href={type.href} style={{ textDecoration: 'none', flexShrink: 0 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 12px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, cursor: 'pointer', minWidth: 72 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: type.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                    {type.icon}
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#8892a0', textAlign: 'center', whiteSpace: 'nowrap' }}>{type.label}</span>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
+<div style={{ padding: '0 16px 20px' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+    <span style={{ fontSize: 15, fontWeight: 700, color: '#e8edf5' }}>Investment Types</span>
+    <Link href="/dashboard/invest" style={{ fontSize: 12, color: G, fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+  </div>
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+    {[
+      { icon: '📡', label: 'Live Trade', color: '#2ecc71', bg: 'rgba(46,204,113,.12)', href: '/dashboard/trading' },
+      { icon: '📈', label: 'Stocks', color: '#3498db', bg: 'rgba(52,152,219,.12)', href: '/dashboard/invest/stocks' },
+      { icon: '🏠', label: 'Real Estate', color: '#9b59b6', bg: 'rgba(155,89,182,.12)', href: '/dashboard/invest/realestate' },
+      { icon: '🤝', label: 'Affiliate', color: '#C9A84C', bg: 'rgba(201,168,76,.12)', href: '/dashboard/affiliate' },
+    ].map(function(type) {
+      return (
+        <Link key={type.label} href={type.href} style={{ textDecoration: 'none' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 6px', background: '#0d1117', border: '1px solid #1e2530', borderRadius: 16, cursor: 'pointer' }}
+            onMouseEnter={function(e) { e.currentTarget.style.borderColor = type.color + '50' }}
+            onMouseLeave={function(e) { e.currentTarget.style.borderColor = '#1e2530' }}
+          >
+            <div style={{ width: 46, height: 46, borderRadius: 14, background: type.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+              {type.icon}
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#8892a0', textAlign: 'center', lineHeight: 1.3 }}>{type.label}</span>
+          </div>
+        </Link>
+      )
+    })}
+  </div>
+</div>
       {/* ── BANNER CAROUSEL ── */}
       <div style={{ padding: '0 16px 20px' }}>
         <div style={{ background: BANNERS[bannerIndex].bg, borderRadius: 18, padding: '20px 22px', border: '1px solid rgba(255,255,255,.06)', transition: 'all .5s ease', minHeight: 110 }}>
