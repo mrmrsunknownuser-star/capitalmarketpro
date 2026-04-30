@@ -184,7 +184,7 @@ export default function DashboardHome() {
 <div style={{ padding: '0 16px 20px' }}>
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
     <span style={{ fontSize: 15, fontWeight: 700, color: '#e8edf5' }}>Investment Types</span>
-    <Link href="/dashboard/invest" style={{ fontSize: 12, color: G, fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+    <Link href="/dashboard/invests" style={{ fontSize: 12, color: '#3498db', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
   </div>
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
     {[
